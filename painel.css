@@ -1,0 +1,37 @@
+:root{color-scheme:dark;--app-bg:#0b0e0c;--app-surface:#141a16;--app-surface-2:#1a221c;--app-line:#28352b;--app-text:#f3f6f1;--app-muted:#a4b0a5;--app-accent:#b7f34a;--app-accent-ink:#11170c;--app-radius:16px}
+*{box-sizing:border-box}
+body{background:radial-gradient(ellipse at 50% -20%,#1d2a1c 0%,var(--app-bg) 55%)!important;color:var(--app-text)!important;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;min-height:100vh}
+header{position:sticky;top:0;z-index:20;padding:14px clamp(14px,3vw,30px)!important;background:rgba(13,18,14,.92)!important;border-bottom:1px solid var(--app-line)!important;backdrop-filter:blur(16px);box-shadow:0 8px 28px #0003}
+header h1{font-size:clamp(17px,2vw,21px)!important;letter-spacing:-.035em;color:var(--app-text)!important}
+header h1:first-letter{color:var(--app-accent)}
+header small,.muted,header .tag{color:var(--app-muted)!important}
+main{width:min(1160px,100%)!important;padding:clamp(16px,3vw,30px)!important;margin:0 auto}
+h2{color:var(--app-text)!important;font-size:18px!important;letter-spacing:-.02em}
+.panel,.tile,.professional,.service,.appointment,.proGroup,.card,.item,.customerRow,.stat,.proGroup{background:linear-gradient(160deg,#182019,#121813)!important;border:1px solid var(--app-line)!important;border-radius:var(--app-radius)!important;box-shadow:0 12px 34px #0002}
+.panel{padding:clamp(16px,2.5vw,22px)!important;margin-top:16px!important}
+.tile{padding:17px!important;min-height:112px!important}
+.tile strong,.stat strong{color:var(--app-accent)!important}
+label{color:#c7d1c6!important}
+input,select,textarea{background:#0d130e!important;border:1px solid #344536!important;border-radius:11px!important;color:var(--app-text)!important;min-height:44px}
+input:focus,select:focus,textarea:focus{outline:2px solid #b7f34a55;border-color:var(--app-accent)!important}
+button,.back,.primary,.action{border-radius:11px!important;transition:transform .15s ease,background .15s ease,border-color .15s ease}
+button,.back,.primary{background:var(--app-accent)!important;color:var(--app-accent-ink)!important;font-weight:750!important}
+button:hover,.back:hover,.primary:hover{filter:brightness(1.06);transform:translateY(-1px)}
+button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+button.secondary,.secondary,.action{background:#202b22!important;color:#e8f1e6!important;border:1px solid #354638!important}
+.action{padding:16px!important;min-height:88px!important;border-radius:14px!important}
+.action:hover{border-color:var(--app-accent)!important;background:#243126!important}
+.action small{color:var(--app-muted)!important}
+.pill,.tag{background:#263326!important;color:#d9efc9!important;border:1px solid #3b5138}
+.empty{background:#111813!important;border-color:#354638!important;border-radius:14px!important}
+#status,#notice,#customerStatus,#bookingStatus{color:var(--app-muted)!important}
+.app-nav{display:flex;gap:7px;align-items:center;overflow-x:auto;scrollbar-width:none;margin-top:12px;padding:2px 0 1px}
+.app-nav::-webkit-scrollbar{display:none}
+.app-nav a{white-space:nowrap;text-decoration:none;color:#c4d0c3;font-size:12px;font-weight:650;padding:9px 12px;border:1px solid transparent;border-radius:10px}
+.app-nav a:hover,.app-nav a[aria-current=page]{color:var(--app-accent);background:#202b21;border-color:#354638}
+.app-header-main{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.app-brand{display:flex;align-items:center;gap:11px}
+.app-brand-mark{width:34px;height:34px;border-radius:11px;background:var(--app-accent);color:#10160c;display:grid;place-items:center;font-weight:900}
+.app-header-actions{display:flex;gap:8px;align-items:center}
+.app-section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px}
+@media(max-width:640px){header{position:relative}.app-nav{margin-top:10px}main{padding:14px!important}.actions{gap:8px}.actions>*{max-width:100%}.app-nav a{padding:8px 10px}.panel{padding:15px!important}}
