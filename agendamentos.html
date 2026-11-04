@@ -107,9 +107,15 @@ async function updateBookingTimes(){
  const day=new Date(date+'T12:00:00').getDay(),off=(dayOff[pro.name]||[]).includes(day);
  if(off){select.innerHTML='<option value="">Profissional de folga nesta data</option>';el('bookingInfo').textContent=pro.name+' não trabalha neste dia.';return;}
  const [open,close]=businessWindow(date),duration=Number(service.duration_minutes)||30;
- const {data:busy,error}=await db.from('appointments').select('start_time,end_time,status').eq('professional_id',pro.id).eq('appointment_date',date);
- if(error){select.innerHTML='<option value="">Erro ao consultar agenda</option>';setBookingStatus('Não foi possível verificar conflitos: '+error.message);return;}
- const blocked=(busy||[]).filter(a=>!['cancelled','canceled','cancelado'].includes(String(a.status||'').toLowerCase())).map(a=>[minutes(a.start_time),minutes(a.end_time)]);
+ const [busyResult,blockResult]=await Promise.all([
+  db.from('appointments').select('start_time,end_time,status').eq('professional_id',pro.id).eq('appointment_date',date),
+  db.from('professional_time_blocks').select('start_time,end_time').eq('professional_id',pro.id).eq('block_date',date)
+ ]);
+ if(busyResult.error||blockResult.error){const err=busyResult.error||blockResult.error;select.innerHTML='<option value="">Erro ao consultar agenda</option>';setBookingStatus('Não foi possível verificar conflitos: '+err.message);return;}
+ const blocked=[
+  ...(busyResult.data||[]).filter(a=>!['cancelled','canceled','cancelado'].includes(String(a.status||'').toLowerCase())).map(a=>[minutes(a.start_time),minutes(a.end_time)]),
+  ...(blockResult.data||[]).map(b=>[minutes(b.start_time),minutes(b.end_time)])
+ ];
  const options=[];
  for(let start=open;start+duration<=close;start+=30){
   if(blocked.some(([a,b])=>start<b&&start+duration>a))continue;
@@ -180,9 +186,15 @@ el('bookingForm').addEventListener('submit',async event=>{
  const customer=el('newCustomer').value,service=bookingServices.find(x=>x.id===el('newService').value),professional=bookingProfessionals.find(x=>x.id===el('newProfessional').value),date=el('newDate').value,time=el('newTime').value;
  if(!customer||!service||!professional||!date||!time){setBookingStatus('Preencha todos os campos.');return;}
  const start=minutes(time),end=start+(Number(service.duration_minutes)||30);
- const {data:conflicts,error:checkError}=await db.from('appointments').select('start_time,end_time,status').eq('professional_id',professional.id).eq('appointment_date',date);
- if(checkError){setBookingStatus('Não foi possível confirmar a disponibilidade: '+checkError.message);return;}
- if((conflicts||[]).some(a=>!['cancelled','canceled','cancelado'].includes(String(a.status||'').toLowerCase())&&start<minutes(a.end_time)&&end>minutes(a.start_time))){setBookingStatus('Este horário acabou de ser ocupado. Escolha outro.');await updateBookingTimes();return;}
+ const [conflictsResult,blocksResult]=await Promise.all([
+  db.from('appointments').select('start_time,end_time,status').eq('professional_id',professional.id).eq('appointment_date',date),
+  db.from('professional_time_blocks').select('start_time,end_time').eq('professional_id',professional.id).eq('block_date',date)
+ ]);
+ if(conflictsResult.error||blocksResult.error){setBookingStatus('Não foi possível confirmar a disponibilidade: '+(conflictsResult.error||blocksResult.error).message);return;}
+ const conflicts=(conflictsResult.data||[]).filter(a=>!['cancelled','canceled','cancelado'].includes(String(a.status||'').toLowerCase()));
+ const overlapsAppointment=conflicts.some(a=>start<minutes(a.end_time)&&end>minutes(a.start_time));
+ const overlapsBlock=(blocksResult.data||[]).some(b=>start<minutes(b.end_time)&&end>minutes(b.start_time));
+ if(overlapsAppointment||overlapsBlock){setBookingStatus(overlapsBlock?'Este horário está bloqueado pelo profissional. Escolha outro.':'Este horário acabou de ser ocupado. Escolha outro.');await updateBookingTimes();return;}
  el('createBooking').disabled=true;el('createBooking').textContent='Criando...';
  const {error}=await db.from('appointments').insert({customer_id:customer,service_id:service.id,professional_id:professional.id,appointment_date:date,start_time:time,end_time:clock(end),status:'scheduled'});
  el('createBooking').disabled=false;el('createBooking').textContent='Criar agendamento';
