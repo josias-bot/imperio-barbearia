@@ -184,7 +184,7 @@ el('bookingForm').addEventListener('submit',async event=>{
  if(checkError){setBookingStatus('Não foi possível confirmar a disponibilidade: '+checkError.message);return;}
  if((conflicts||[]).some(a=>!['cancelled','canceled','cancelado'].includes(String(a.status||'').toLowerCase())&&start<minutes(a.end_time)&&end>minutes(a.start_time))){setBookingStatus('Este horário acabou de ser ocupado. Escolha outro.');await updateBookingTimes();return;}
  el('createBooking').disabled=true;el('createBooking').textContent='Criando...';
- const {error}=await db.from('appointments').insert({customer_id:customer,service_id:service.id,professional_id:professional.id,appointment_date:date,start_time:time,end_time:clock(end),status:'confirmed'});
+ const {error}=await db.from('appointments').insert({customer_id:customer,service_id:service.id,professional_id:professional.id,appointment_date:date,start_time:time,end_time:clock(end),status:'scheduled'});
  el('createBooking').disabled=false;el('createBooking').textContent='Criar agendamento';
  if(error){setBookingStatus('Não foi possível criar o agendamento: '+error.message);return;}
  setBookingStatus('Agendamento criado com sucesso!');
