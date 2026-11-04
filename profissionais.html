@@ -1,1 +1,114 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profissionais — Império Barbearia</title><style>*{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif}header{padding:20px;background:#111611;border-bottom:1px solid #293629;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1,h2{color:#b7f34a}h1{font-size:22px;margin:0}main{max-width:900px;margin:auto;padding:22px}.back{display:inline-block;padding:12px 15px;border-radius:10px;background:#b7f34a;color:#101510;text-decoration:none;font-weight:bold}.panel{margin-top:22px;padding:20px;border:1px solid #34452f;border-radius:14px;background:#111611;color:#b8c2b3;line-height:1.6}</style></head><body><header><h1>Império Barbearia · Profissionais</h1><a class="back" href="admin.html">← Voltar ao painel</a></header><main><h2>Profissionais</h2><div class="panel">Gerenciamento da equipe e dos serviços realizados.<br><br>Esta página individual está criada. As ferramentas de gerenciamento desta seção serão implementadas na próxima etapa.</div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');(async()=>{const {data:{session}}=await db.auth.getSession();if(!session){location.href='login.html';return;}const {data,error}=await db.from('profiles').select('role').eq('id',session.user.id).single();if(error||data.role!=='admin')location.href='login.html';})();</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080a08"><title>Profissionais — Império Barbearia</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif}
+header{padding:18px;background:#111611;border-bottom:1px solid #293629;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1,h2{color:#b7f34a}h1{font-size:21px;margin:0}h2{font-size:19px;margin:0 0 15px}
+main{max-width:900px;margin:auto;padding:20px 16px 50px}.back,button{display:inline-block;padding:12px 15px;border:0;border-radius:10px;background:#b7f34a;color:#101510;text-decoration:none;font-weight:bold;cursor:pointer}
+.secondary{background:#20291d;color:#eaf2e5;border:1px solid #40523a}
+.panel,.professional{margin-top:18px;padding:18px;border:1px solid #34452f;border-radius:14px;background:#111611}
+label{display:block;color:#cbd5c5;font-size:13px;margin:13px 0 6px}input{width:100%;padding:12px;border:1px solid #40523a;border-radius:9px;background:#090d09;color:#fff;font:inherit}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:10px}
+.check{display:flex;align-items:center;gap:9px;padding:10px;background:#0b100b;border:1px solid #293629;border-radius:9px;color:#e4ecdf;font-size:13px}.check input{width:auto}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+#status{color:#b8c2b3;line-height:1.5;margin:12px 0}.professional{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.profInfo{flex:1;min-width:180px}.professional strong{color:#b7f34a}.muted{color:#aab5a5;font-size:13px;line-height:1.6}
+.pill{display:inline-block;margin:5px 5px 0 0;padding:5px 8px;border-radius:20px;background:#20291d;color:#cfe6b7;font-size:11px}
+.hidden{display:none!important}.empty{padding:18px;color:#aab5a5;text-align:center;border:1px dashed #40523a;border-radius:10px}
+</style></head>
+<body>
+<header><h1>Império Barbearia · Profissionais</h1><a class="back" href="admin.html">← Voltar ao painel</a></header>
+<main>
+<section class="panel">
+<h2 id="formTitle">Cadastrar profissional</h2>
+<form id="professionalForm">
+<input type="hidden" id="professionalId">
+<div class="row">
+<div><label for="name">Nome do profissional *</label><input id="name" required maxlength="100" placeholder="Nome completo"></div>
+<div><label>Situação</label><label class="check"><input id="active" type="checkbox" checked> Profissional ativo</label></div>
+</div>
+<label>Serviços realizados</label>
+<div id="serviceOptions" class="checks"><span class="muted">Carregando serviços...</span></div>
+<div class="actions"><button id="saveBtn" type="submit">Salvar profissional</button><button class="secondary hidden" id="cancelBtn" type="button">Cancelar edição</button></div>
+</form>
+</section>
+<section class="panel"><h2>Equipe cadastrada</h2><div id="status">Verificando acesso...</div><div id="professionalList"></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');
+const el=id=>document.getElementById(id);
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let professionals=[],services=[],links=[];
+function status(message){el('status').textContent=message;}
+async function init(){
+ const {data:{session}}=await db.auth.getSession();
+ if(!session){location.href='login.html';return;}
+ const {data:profile,error}=await db.from('profiles').select('role').eq('id',session.user.id).single();
+ if(error||profile?.role!=='admin'){location.href='login.html';return;}
+ await Promise.all([loadServices(),loadProfessionals()]);
+}
+async function loadServices(){
+ const {data,error}=await db.from('services').select('id,name,active').order('name');
+ if(error){el('serviceOptions').innerHTML='<span class="muted">Não foi possível carregar serviços: '+esc(error.message)+'</span>';return;}
+ services=data||[];
+ el('serviceOptions').innerHTML=services.length?services.map(s=>'<label class="check"><input type="checkbox" name="service" value="'+esc(s.id)+'" '+(!s.active?'disabled':'')+'> '+esc(s.name)+(s.active?'':' (inativo)')+'</label>').join(''):'<span class="muted">Nenhum serviço cadastrado.</span>';
+}
+async function loadProfessionals(){
+ status('Carregando equipe...');
+ const [peopleResult,linkResult]=await Promise.all([
+  db.from('professionals').select('id,name,active').order('name'),
+  db.from('professional_services').select('professional_id,service_id')
+ ]);
+ if(peopleResult.error){status('Não foi possível carregar os profissionais: '+peopleResult.error.message);return;}
+ if(linkResult.error){status('Equipe carregada, mas não foi possível consultar os serviços associados: '+linkResult.error.message);return;}
+ professionals=peopleResult.data||[];links=linkResult.data||[];
+ status(professionals.length+' profissional(is) cadastrado(s).');renderProfessionals();
+}
+function renderProfessionals(){
+ const target=el('professionalList');
+ if(!professionals.length){target.innerHTML='<div class="empty">Nenhum profissional cadastrado. Use o formulário acima para adicionar o primeiro.</div>';return;}
+ target.innerHTML=professionals.map(p=>{
+  const names=links.filter(x=>x.professional_id===p.id).map(x=>services.find(s=>s.id===x.service_id)?.name).filter(Boolean);
+  return '<article class="professional"><div class="profInfo"><strong>'+esc(p.name)+'</strong><div><span class="pill">'+(p.active?'Ativo':'Inativo')+'</span></div><div class="muted">Serviços: '+(names.length?names.map(esc).join(', '):'Nenhum associado')+'</div></div><button class="secondary" type="button" data-edit="'+esc(p.id)+'">Editar</button></article>';
+ }).join('');
+ target.querySelectorAll('[data-edit]').forEach(btn=>btn.addEventListener('click',()=>editProfessional(btn.dataset.edit)));
+}
+function resetForm(){
+ el('professionalForm').reset();el('professionalId').value='';el('active').checked=true;
+ el('formTitle').textContent='Cadastrar profissional';el('saveBtn').textContent='Salvar profissional';el('cancelBtn').classList.add('hidden');
+ document.querySelectorAll('input[name="service"]').forEach(c=>c.checked=false);
+}
+function editProfessional(id){
+ const p=professionals.find(x=>x.id===id);if(!p)return;
+ el('professionalId').value=p.id;el('name').value=p.name||'';el('active').checked=!!p.active;
+ const selected=links.filter(x=>x.professional_id===id).map(x=>x.service_id);
+ document.querySelectorAll('input[name="service"]').forEach(c=>c.checked=selected.includes(c.value));
+ el('formTitle').textContent='Editar profissional';el('saveBtn').textContent='Salvar alterações';el('cancelBtn').classList.remove('hidden');
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+el('cancelBtn').addEventListener('click',resetForm);
+el('professionalForm').addEventListener('submit',async event=>{
+ event.preventDefault();el('saveBtn').disabled=true;el('saveBtn').textContent='Salvando...';
+ const id=el('professionalId').value;
+ const payload={name:el('name').value.trim(),active:el('active').checked};
+ try{
+  let professionalId=id;
+  if(id){
+   const {error}=await db.from('professionals').update(payload).eq('id',id);if(error)throw error;
+  }else{
+   const {data,error}=await db.from('professionals').insert(payload).select('id').single();if(error)throw error;professionalId=data.id;
+  }
+  const selected=Array.from(document.querySelectorAll('input[name="service"]:checked')).map(c=>c.value);
+  const {error:deleteError}=await db.from('professional_services').delete().eq('professional_id',professionalId);if(deleteError)throw deleteError;
+  if(selected.length){const {error:insertError}=await db.from('professional_services').insert(selected.map(service_id=>({professional_id:professionalId,service_id})));if(insertError)throw insertError;}
+  resetForm();status('Profissional salvo com sucesso.');await loadProfessionals();
+ }catch(error){status('Não foi possível salvar: '+(error.message||'erro inesperado'));}
+ finally{el('saveBtn').disabled=false;el('saveBtn').textContent=el('professionalId').value?'Salvar alterações':'Salvar profissional';}
+});
+init();
+</script></body></html>
