@@ -57,7 +57,8 @@ async function init(){
  if(!session){location.href='login.html';return;}
  const {data:profile,error}=await db.from('profiles').select('role').eq('id',session.user.id).single();
  if(error||profile?.role!=='admin'){location.href='login.html';return;}
- el('date').value=today();
+ // A tela inicia mostrando todas as datas para facilitar a visão por profissional.
+ el('date').value='';
  await loadAppointments();
 }
 async function loadAppointments(){
