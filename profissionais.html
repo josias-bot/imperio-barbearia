@@ -74,7 +74,7 @@ function renderProfessionals(){
  if(!professionals.length){target.innerHTML='<div class="empty">Nenhum profissional cadastrado. Use o formulário acima para adicionar o primeiro.</div>';return;}
  target.innerHTML=professionals.map(p=>{
   const names=links.filter(x=>x.professional_id===p.id).map(x=>services.find(s=>s.id===x.service_id)?.name).filter(Boolean);
-  return '<article class="professional"><div class="profInfo"><strong>'+esc(p.name)+'</strong><div><span class="pill">'+(p.active?'Ativo':'Inativo')+'</span></div><div class="muted">Serviços: '+(names.length?names.map(esc).join(', '):'Nenhum associado')+'</div></div><div class="actions"><a class="back" href="agenda-profissional.html?id='+encodeURIComponent(p.id)+'">Ver agenda</a><button class="secondary" type="button" data-edit="'+esc(p.id)+'">Editar</button></div></article>';
+  return '<article class="professional"><div class="profInfo"><strong>'+esc(p.name)+'</strong><div><span class="pill">'+(p.active?'Ativo':'Inativo')+'</span></div><div class="muted">Serviços: '+(names.length?names.map(esc).join(', '):'Nenhum associado')+'</div></div><div class="actions"><a class="back" href="agenda-profissional.html?id='+encodeURIComponent(p.id)+'">Agenda diária</a><button class="secondary" type="button" data-edit="'+esc(p.id)+'">Editar</button></div></article>';
  }).join('');
  target.querySelectorAll('[data-edit]').forEach(btn=>btn.addEventListener('click',()=>editProfessional(btn.dataset.edit)));
 }
