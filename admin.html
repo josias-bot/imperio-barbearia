@@ -25,7 +25,7 @@ h2{color:#b7f34a;font-size:19px;margin:24px 0 12px}
 #customerStatus{color:#b8c2b3;margin:8px 0}
 </style><link rel="stylesheet" href="painel.css"></head>
 <body>
-<header><div><h1>Império Barbearia</h1><small>Painel administrativo</small></div><button id="logout">Sair</button><nav class="app-nav" aria-label="Navegação principal"><a href="admin.html">Visão geral</a><a href="agendamentos.html">Agenda</a><a href="clientes.html">Clientes</a><a href="profissionais.html">Profissionais</a><a href="servicos.html">Serviços</a><a href="planos.html">Planos</a><a href="produtos.html">Produtos</a><a href="financeiro.html">Financeiro</a></nav></header>
+<header><div class="app-header-main"><div class="app-brand"><div class="app-brand-mark">I</div><div><h1>Império Barbearia</h1><small>Painel administrativo</small></div></div><button id="logout">Sair</button></div><nav class="app-nav" aria-label="Navegação principal"><a href="admin.html">Visão geral</a><a href="agendamentos.html">Agenda</a><a href="clientes.html">Clientes</a><a href="profissionais.html">Profissionais</a><a href="servicos.html">Serviços</a><a href="planos.html">Planos</a><a href="produtos.html">Produtos</a><a href="financeiro.html">Financeiro</a></nav></header>
 <main>
 <div id="welcome">Verificando acesso...</div>
 <h2>Resumo do negócio</h2>
@@ -72,4 +72,4 @@ async function init(){
 }
 document.getElementById('logout').onclick=async()=>{await db.auth.signOut();location.href='login.html';};
 init();
-</script></body></html>
+</script><script id="app-nav-active">document.querySelectorAll('.app-nav a').forEach(a=>{const target=new URL(a.href,location.href).pathname.split('/').pop();if(target===location.pathname.split('/').pop())a.setAttribute('aria-current','page')});</script></body></html>
