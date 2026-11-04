@@ -101,9 +101,13 @@ $('booking').addEventListener('submit',async e=>{
  msg('bookMsg',r.error?'Não foi possível agendar: '+r.error.message:'Agendamento criado com sucesso.');if(!r.error){await agenda();await times()}$('bookBtn').disabled=false;
 });
 $('block').addEventListener('submit',async e=>{
- e.preventDefault();$('blockBtn').disabled=true;let start=$('blockStart').value,end=$('blockEnd').value;
+ e.preventDefault();$('blockBtn').disabled=true;let start=$('blockStart').value,end=$('blockEnd').value,date=$('blockDate').value;
+ if(!date||date<today()){msg('blockMsg','Escolha uma data de hoje ou futura.');$('blockBtn').disabled=false;return}
  if(end<=start){msg('blockMsg','O término deve ser posterior ao início.');$('blockBtn').disabled=false;return}
- let r=await db.from('professional_time_blocks').insert({professional_id:pro.id,block_date:$('blockDate').value,start_time:start,end_time:end,reason:$('reason').value.trim()||null,created_by:session.user.id});
+ let day=new Date(date+'T12:00:00').getDay(),open=day===0?480:day===6?480:540,close=day===0?720:1140;
+ if((folgas[pro.name]||[]).includes(day)){msg('blockMsg','Não é possível bloquear a agenda em um dia de folga do profissional.');$('blockBtn').disabled=false;return}
+ if(minutes(start)<open||minutes(end)>close){msg('blockMsg','O bloqueio deve respeitar o funcionamento da barbearia.');$('blockBtn').disabled=false;return}
+ let r=await db.from('professional_time_blocks').insert({professional_id:pro.id,block_date:date,start_time:start,end_time:end,reason:$('reason').value.trim()||null,created_by:session.user.id});
  msg('blockMsg',r.error?'Não foi possível bloquear: '+r.error.message:'Horário bloqueado com sucesso.');if(!r.error){$('block').reset();$('blockDate').value=today();await agenda();await times()}$('blockBtn').disabled=false;
 });
 $('filterDate').addEventListener('change',agenda);$('filterType').addEventListener('change',agenda);$('refresh').addEventListener('click',agenda);$('allDates').addEventListener('click',()=>{$('filterDate').value='';agenda()});$('logout').addEventListener('click',async()=>{await db.auth.signOut();location.href='login.html'});init();
