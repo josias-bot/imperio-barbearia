@@ -54,10 +54,19 @@ async function agenda(){
  let [cr,sr]=await Promise.all([ids.length?db.from('profiles').select('id,full_name,phone').in('id',ids):Promise.resolve({data:[]}),sids.length?db.from('services').select('id,name').in('id',sids):Promise.resolve({data:[]})]);
  let cm=Object.fromEntries((cr.data||[]).map(x=>[x.id,x])),sm=Object.fromEntries((sr.data||[]).map(x=>[x.id,x]));
  let mode=$('filterType').value,items=[];
- if(mode!=='blocks')appointments.forEach(x=>items.push({date:x.appointment_date,start:x.start_time,end:x.end_time,html:'<strong>'+esc(cm[x.customer_id]?.full_name||'Cliente')+'</strong><div class="muted">'+esc(sm[x.service_id]?.name||'Serviço')+' · '+esc(cm[x.customer_id]?.phone||'')+'</div><span class="tag">'+esc(x.status)+'</span>'}));
+ if(mode!=='blocks')appointments.forEach(x=>{const terminal=['cancelled','completed'].includes(String(x.status||'').toLowerCase());const controls=terminal?'':'<div class="actions"><button class="secondary" type="button" data-status-id="'+esc(x.id)+'" data-next-status="cancelled">Cancelar</button><button type="button" data-status-id="'+esc(x.id)+'" data-next-status="completed">Finalizar</button></div>';items.push({date:x.appointment_date,start:x.start_time,end:x.end_time,html:'<strong>'+esc(cm[x.customer_id]?.full_name||'Cliente')+'</strong><div class="muted">'+esc(sm[x.service_id]?.name||'Serviço')+' · '+esc(cm[x.customer_id]?.phone||'')+'</div><span class="tag">'+esc(x.status)+'</span>'+controls});});
  if(mode!=='appointments')blocks.forEach(x=>items.push({id:x.id,isBlock:true,date:x.block_date,start:x.start_time,end:x.end_time,html:'<strong>Bloqueio</strong><div class="muted">'+esc(x.reason||'Sem motivo informado')+'</div><div class="actions"><button class="secondary" type="button" data-remove-block="'+esc(x.id)+'">Remover bloqueio</button></div>'}));
  items.sort((x,y)=>(x.date+x.start).localeCompare(y.date+y.start));
  $('list').innerHTML=items.length?items.map(x=>'<article class="item"><strong>'+x.date.split('-').reverse().join('/')+' · '+String(x.start).slice(0,5)+'–'+String(x.end).slice(0,5)+'</strong>'+x.html+'</article>').join(''):'<div class="empty">Nenhum horário encontrado.</div>';
+ $('list').querySelectorAll('[data-status-id]').forEach(button=>button.addEventListener('click',async()=>{
+  const id=button.dataset.statusId,next=button.dataset.nextStatus;
+  const label=next==='cancelled'?'cancelar':'finalizar';
+  if(!confirm('Confirma '+label+' este agendamento?'))return;
+  button.disabled=true;button.textContent='Salvando...';
+  const result=await db.from('appointments').update({status:next}).eq('id',id);
+  if(result.error){button.disabled=false;button.textContent=next==='cancelled'?'Cancelar':'Finalizar';msg('status','Não foi possível atualizar o agendamento: '+result.error.message);return;}
+  msg('status',next==='cancelled'?'Agendamento cancelado.':'Agendamento finalizado.');await agenda();await times();
+ }));
  $('list').querySelectorAll('[data-remove-block]').forEach(button=>button.addEventListener('click',async()=>{
   const id=button.dataset.removeBlock;
   if(!confirm('Deseja realmente remover este bloqueio?'))return;
