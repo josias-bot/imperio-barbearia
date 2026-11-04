@@ -14,7 +14,7 @@ button{width:100%;margin-top:22px;padding:14px;border:0;border-radius:10px;backg
 <h1>Império Barbearia</h1><p>Entre com seu e-mail ou telefone e senha.</p>
 <form id="login">
 <label for="identity">E-mail ou telefone com DDD</label>
-<input id="identity" type="text" autocomplete="username" placeholder="seu e-mail ou 5581999999999" required>
+<input id="identity" type="text" autocomplete="username" placeholder="seu e-mail ou 81999999999" required>
 <label for="password">Senha</label>
 <input id="password" type="password" autocomplete="current-password" required>
 <button type="submit">Entrar</button><div id="msg" role="status"></div>
@@ -31,9 +31,15 @@ document.getElementById('login').addEventListener('submit',async e=>{
  e.preventDefault();msg.textContent='Verificando acesso...';
  const identity=document.getElementById('identity').value.trim();
  const password=document.getElementById('password').value;
- const credentials=identity.includes('@')
-   ? {email:identity,password}
-   : {phone:identity.replace(/\D/g,''),password};
+ let credentials;
+ if(identity.includes('@')) credentials={email:identity,password};
+ else {
+   let digits=identity.replace(/\D/g,'');
+   if(digits.startsWith('00')) digits=digits.slice(2);
+   if(digits.startsWith('0')) digits=digits.slice(1);
+   if(!digits.startsWith('55')) digits='55'+digits;
+   credentials={phone:'+'+digits,password};
+ }
  const {data,error}=await db.auth.signInWithPassword(credentials);
  if(error){msg.textContent='Não foi possível entrar: '+error.message;return;}
  const {data:profile,error:profileError}=await db.from('profiles').select('role').eq('id',data.user.id).single();
