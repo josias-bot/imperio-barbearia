@@ -154,7 +154,7 @@ async function loadAppointments(){
  render();
 }
 async function changeAppointmentStatus(id,next){
- const label=next==='cancelled'?'cancelar':'finalizar';
+ const label=next==='cancelled'?'cancelar':next==='confirmed'?'confirmar':'finalizar';
  if(!confirm('Confirma '+label+' este agendamento?'))return;
  const {error}=await db.from('appointments').update({status:next}).eq('id',id);
  if(error){message('Não foi possível atualizar o agendamento: '+error.message);return;}
@@ -181,8 +181,10 @@ function render(){
   const rows=items.map(a=>{
    const time=timeLabel(a.start_time)+(a.end_time?' – '+timeLabel(a.end_time):'');
    const customer=customerProfiles[a.customer_id];
-   const terminal=['cancelled','completed'].includes(String(a.status||'').toLowerCase());
-   const controls=terminal?'':'<div class="actions"><button class="secondary" type="button" data-status-id="'+esc(a.id)+'" data-next-status="cancelled">Cancelar</button><button type="button" data-status-id="'+esc(a.id)+'" data-next-status="completed">Finalizar</button></div>';
+   const statusValue=String(a.status||'').toLowerCase();
+   const terminal=['cancelled','completed'].includes(statusValue);
+   const confirmButton=statusValue==='scheduled'?'<button type="button" data-status-id="'+esc(a.id)+'" data-next-status="confirmed">Confirmar</button>':'';
+   const controls=terminal?'':'<div class="actions">'+confirmButton+'<button class="secondary" type="button" data-status-id="'+esc(a.id)+'" data-next-status="cancelled">Cancelar</button><button type="button" data-status-id="'+esc(a.id)+'" data-next-status="completed">Finalizar</button></div>';
    return '<article class="appointment"><div><strong>'+esc(a.services?.name||'Serviço não informado')+'</strong><div class="muted">'+dateLabel(a.appointment_date)+' · '+esc(time)+'</div><div class="muted">Cliente: '+esc(customer?.full_name||'Cliente não identificado')+(customer?.phone?' · '+esc(customer.phone):'')+'</div><div><span class="pill">'+esc(a.status||'Sem situação')+'</span></div>'+controls+'</div></article>';
   }).join('');
   return '<section class="proGroup"><div class="proHeader"><strong>'+esc(name)+'</strong><div class="proStats"><span>'+items.length+' agendamento(s)</span><span>'+confirmed+' confirmado(s)</span><span>'+pending+' pendente(s)</span></div></div><div class="proBody">'+rows+'</div></section>';
