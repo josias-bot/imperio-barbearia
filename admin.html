@@ -16,6 +16,14 @@ h2{color:#b7f34a;font-size:19px;margin:24px 0 12px}
 .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 .action{text-align:left;min-height:74px;font-weight:bold}.action small{display:block;color:#b8c2b3;font-weight:normal;margin-top:6px}
 #notice{color:#b8c2b3;line-height:1.5;margin-top:18px}
+#customersSection{display:none;margin-top:22px;padding:18px;border:1px solid #34452f;border-radius:14px;background:#101610}
+#customersSection h2{margin:0 0 12px}
+#customerSearch{width:100%;padding:13px;border:1px solid #465640;border-radius:10px;background:#080a08;color:#f4f7f2;font-size:16px;margin:8px 0 14px}
+#customerList{display:grid;gap:10px}
+.customerRow{padding:13px;border:1px solid #293629;border-radius:10px;background:#141b13}
+.customerRow strong{display:block;color:#b7f34a;margin-bottom:5px}
+.customerRow small{color:#b8c2b3;line-height:1.6}
+#customerStatus{color:#b8c2b3;margin:8px 0}
 </style></head>
 <body>
 <header><div><h1>Império Barbearia</h1><small>Painel administrativo</small></div><button id="logout">Sair</button></header>
@@ -42,6 +50,12 @@ h2{color:#b7f34a;font-size:19px;margin:24px 0 12px}
 <button class="action" data-section="produtos">Produtos e estoque<small>Produtos e movimentações</small></button>
 <button class="action" data-section="financeiro">Financeiro<small>Pagamentos e relatórios</small></button>
 </div>
+<section id="customersSection">
+<h2>Consulta de clientes</h2>
+<input id="customerSearch" type="search" placeholder="Buscar por nome ou telefone..." autocomplete="off">
+<div id="customerStatus">Carregando clientes...</div>
+<div id="customerList"></div>
+</section>
 <div id="notice">Este é o início do painel. Os indicadores são carregados do Supabase. As telas de cadastro e edição serão implementadas nas próximas etapas.</div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -64,6 +78,39 @@ async function init(){
  }));
 }
 document.getElementById('logout').onclick=async()=>{await db.auth.signOut();location.href='login.html';};
-document.querySelectorAll('[data-section]').forEach(b=>b.onclick=()=>{document.getElementById('notice').textContent='A seção "'+b.dataset.section+'" será construída na próxima etapa. Nenhum dado foi alterado.';});
+let customerRows=[];
+const customersSection=document.getElementById('customersSection');
+const customerStatus=document.getElementById('customerStatus');
+const customerList=document.getElementById('customerList');
+function renderCustomers(){
+ const term=document.getElementById('customerSearch').value.trim().toLocaleLowerCase('pt-BR');
+ const filtered=customerRows.filter(c=>(c.full_name||'').toLocaleLowerCase('pt-BR').includes(term)||(c.phone||'').toLowerCase().includes(term));
+ customerList.replaceChildren();
+ if(!filtered.length){customerStatus.textContent=term?'Nenhum cliente encontrado.':'Nenhum cliente cadastrado.';return;}
+ customerStatus.textContent=filtered.length+' cliente(s) encontrado(s).';
+ filtered.forEach(c=>{
+  const card=document.createElement('div');card.className='customerRow';
+  const name=document.createElement('strong');name.textContent=c.full_name||'Nome não informado';
+  const details=document.createElement('small');
+  const phone=c.phone||'Telefone não informado';
+  const date=c.created_at?new Date(c.created_at).toLocaleDateString('pt-BR'):'Data não informada';
+  details.textContent='Telefone: '+phone+' • Cadastro: '+date;
+  card.append(name,details);customerList.append(card);
+ });
+}
+async function loadCustomers(){
+ customersSection.style.display='block';
+ customerStatus.textContent='Carregando clientes...';
+ customerList.replaceChildren();
+ const {data,error}=await db.from('profiles').select('id,full_name,phone,created_at').eq('role','customer').order('created_at',{ascending:false}).limit(100);
+ if(error){customerStatus.textContent='Não foi possível consultar os clientes: '+error.message;return;}
+ customerRows=data||[];renderCustomers();
+}
+document.getElementById('customerSearch').addEventListener('input',renderCustomers);
+document.querySelectorAll('[data-section]').forEach(b=>b.onclick=()=>{
+ if(b.dataset.section==='clientes'){loadCustomers();return;}
+ customersSection.style.display='none';
+ document.getElementById('notice').textContent='A seção "'+b.dataset.section+'" será construída na próxima etapa. Nenhum dado foi alterado.';
+});
 init();
 </script></body></html>
