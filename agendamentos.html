@@ -153,6 +153,14 @@ async function loadAppointments(){
  message(appointments.length+' agendamento(s) carregado(s).');
  render();
 }
+async function changeAppointmentStatus(id,next){
+ const label=next==='cancelled'?'cancelar':'finalizar';
+ if(!confirm('Confirma '+label+' este agendamento?'))return;
+ const {error}=await db.from('appointments').update({status:next}).eq('id',id);
+ if(error){message('Não foi possível atualizar o agendamento: '+error.message);return;}
+ message(next==='cancelled'?'Agendamento cancelado.':'Agendamento finalizado.');
+ await loadAppointments();
+}
 function render(){
  const date=el('date').value, status=el('statusFilter').value, term=el('search').value.trim().toLocaleLowerCase('pt-BR'), now=today();
  const filtered=appointments.filter(a=>{
@@ -173,7 +181,9 @@ function render(){
   const rows=items.map(a=>{
    const time=timeLabel(a.start_time)+(a.end_time?' – '+timeLabel(a.end_time):'');
    const customer=customerProfiles[a.customer_id];
-   return '<article class="appointment"><div><strong>'+esc(a.services?.name||'Serviço não informado')+'</strong><div class="muted">'+dateLabel(a.appointment_date)+' · '+esc(time)+'</div><div class="muted">Cliente: '+esc(customer?.full_name||'Cliente não identificado')+(customer?.phone?' · '+esc(customer.phone):'')+'</div></div><div><span class="pill">'+esc(a.status||'Sem situação')+'</span></div></article>';
+   const terminal=['cancelled','completed'].includes(String(a.status||'').toLowerCase());
+   const controls=terminal?'':'<div class="actions"><button class="secondary" type="button" data-status-id="'+esc(a.id)+'" data-next-status="cancelled">Cancelar</button><button type="button" data-status-id="'+esc(a.id)+'" data-next-status="completed">Finalizar</button></div>';
+   return '<article class="appointment"><div><strong>'+esc(a.services?.name||'Serviço não informado')+'</strong><div class="muted">'+dateLabel(a.appointment_date)+' · '+esc(time)+'</div><div class="muted">Cliente: '+esc(customer?.full_name||'Cliente não identificado')+(customer?.phone?' · '+esc(customer.phone):'')+'</div><div><span class="pill">'+esc(a.status||'Sem situação')+'</span></div>'+controls+'</div></article>';
   }).join('');
   return '<section class="proGroup"><div class="proHeader"><strong>'+esc(name)+'</strong><div class="proStats"><span>'+items.length+' agendamento(s)</span><span>'+confirmed+' confirmado(s)</span><span>'+pending+' pendente(s)</span></div></div><div class="proBody">'+rows+'</div></section>';
  }).join('');
@@ -207,6 +217,7 @@ el('bookingForm').addEventListener('submit',async event=>{
  el('bookingForm').reset();el('newProfessional').innerHTML='<option value="">Selecione o profissional</option>';el('newTime').innerHTML='<option value="">Escolha serviço, profissional e data</option>';
  await loadAppointments();
 });
+el('appointmentList').addEventListener('click',event=>{const button=event.target.closest('[data-status-id]');if(button)changeAppointmentStatus(button.dataset.statusId,button.dataset.nextStatus);});
 el('date').addEventListener('change',render);
 el('statusFilter').addEventListener('change',render);
 el('search').addEventListener('input',render);
