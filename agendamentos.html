@@ -1,1 +1,100 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agendamentos — Império Barbearia</title><style>*{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif}header{padding:20px;background:#111611;border-bottom:1px solid #293629;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1,h2{color:#b7f34a}h1{font-size:22px;margin:0}main{max-width:900px;margin:auto;padding:22px}.back{display:inline-block;padding:12px 15px;border-radius:10px;background:#b7f34a;color:#101510;text-decoration:none;font-weight:bold}.panel{margin-top:22px;padding:20px;border:1px solid #34452f;border-radius:14px;background:#111611;color:#b8c2b3;line-height:1.6}</style></head><body><header><h1>Império Barbearia · Agendamentos</h1><a class="back" href="admin.html">← Voltar ao painel</a></header><main><h2>Agendamentos</h2><div class="panel">Consulta e gerenciamento dos horários agendados.<br><br>Esta página individual está criada. As ferramentas de gerenciamento desta seção serão implementadas na próxima etapa.</div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');(async()=>{const {data:{session}}=await db.auth.getSession();if(!session){location.href='login.html';return;}const {data,error}=await db.from('profiles').select('role').eq('id',session.user.id).single();if(error||data.role!=='admin')location.href='login.html';})();</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080a08"><title>Agendamentos — Império Barbearia</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif}
+header{padding:18px;background:#111611;border-bottom:1px solid #293629;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1,h2{color:#b7f34a}h1{font-size:21px;margin:0}h2{font-size:19px;margin:0 0 15px}
+main{max-width:1000px;margin:auto;padding:20px 16px 50px}.back,button{display:inline-block;padding:12px 15px;border:0;border-radius:10px;background:#b7f34a;color:#101510;text-decoration:none;font-weight:bold;cursor:pointer}
+.secondary{background:#20291d;color:#eaf2e5;border:1px solid #40523a}
+.panel,.appointment{margin-top:18px;padding:18px;border:1px solid #34452f;border-radius:14px;background:#111611}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label{display:block;color:#cbd5c5;font-size:13px;margin:0 0 6px}
+input,select{width:100%;padding:12px;border:1px solid #40523a;border-radius:9px;background:#090d09;color:#fff;font:inherit}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+#status{color:#b8c2b3;line-height:1.5;margin:12px 0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
+.stat{padding:14px;border-radius:10px;background:#0b100b;border:1px solid #293629}.stat strong{display:block;color:#b7f34a;font-size:22px}.muted{color:#aab5a5;font-size:13px;line-height:1.6}
+.appointment strong{color:#b7f34a}.appointment{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.pill{display:inline-block;margin:5px 5px 0 0;padding:5px 8px;border-radius:20px;background:#20291d;color:#cfe6b7;font-size:11px}
+.empty{padding:18px;color:#aab5a5;text-align:center;border:1px dashed #40523a;border-radius:10px}
+@media(max-width:560px){.appointment{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header><h1>Império Barbearia · Agendamentos</h1><a class="back" href="admin.html">← Voltar ao painel</a></header>
+<main>
+<section class="panel">
+<h2>Consultar agendamentos</h2>
+<div class="filters">
+<div><label for="date">Data</label><input id="date" type="date"></div>
+<div><label for="statusFilter">Situação</label><select id="statusFilter"><option value="">Todas as situações</option></select></div>
+<div><label for="search">Buscar cliente, serviço ou profissional</label><input id="search" type="search" placeholder="Digite para buscar"></div>
+</div>
+<div class="actions"><button id="todayBtn" type="button">Hoje</button><button id="allBtn" class="secondary" type="button">Todas as datas</button><button id="refreshBtn" class="secondary" type="button">Atualizar</button></div>
+<div class="stats">
+<div class="stat"><strong id="totalCount">—</strong><span class="muted">Encontrados</span></div>
+<div class="stat"><strong id="todayCount">—</strong><span class="muted">Hoje</span></div>
+<div class="stat"><strong id="upcomingCount">—</strong><span class="muted">Futuros</span></div>
+</div>
+<div id="status">Verificando acesso...</div>
+</section>
+<section class="panel"><h2>Lista de horários</h2><div id="appointmentList"></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');
+const el=id=>document.getElementById(id);
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let appointments=[];
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+function message(value){el('status').textContent=value;}
+function dateLabel(value){if(!value)return 'Data não informada';const [y,m,d]=value.split('-');return d+'/'+m+'/'+y;}
+function timeLabel(value){return value?String(value).slice(0,5):'—';}
+async function init(){
+ const {data:{session}}=await db.auth.getSession();
+ if(!session){location.href='login.html';return;}
+ const {data:profile,error}=await db.from('profiles').select('role').eq('id',session.user.id).single();
+ if(error||profile?.role!=='admin'){location.href='login.html';return;}
+ el('date').value=today();
+ await loadAppointments();
+}
+async function loadAppointments(){
+ message('Carregando agendamentos...');
+ el('refreshBtn').disabled=true;
+ const {data,error}=await db.from('appointments')
+  .select('id,appointment_date,start_time,end_time,status,customer_id,services(name),professionals(name)')
+  .order('appointment_date',{ascending:true}).order('start_time',{ascending:true}).limit(500);
+ el('refreshBtn').disabled=false;
+ if(error){message('Não foi possível carregar os agendamentos: '+error.message);el('appointmentList').innerHTML='';return;}
+ appointments=data||[];
+ const statuses=[...new Set(appointments.map(a=>a.status).filter(Boolean))].sort();
+ el('statusFilter').innerHTML='<option value="">Todas as situações</option>'+statuses.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join('');
+ message(appointments.length+' agendamento(s) carregado(s).');
+ render();
+}
+function render(){
+ const date=el('date').value, status=el('statusFilter').value, term=el('search').value.trim().toLocaleLowerCase('pt-BR'), now=today();
+ const filtered=appointments.filter(a=>{
+  const text=[a.customer_id,a.services?.name,a.professionals?.name,a.status].join(' ').toLocaleLowerCase('pt-BR');
+  return (!date||a.appointment_date===date)&&(!status||a.status===status)&&(!term||text.includes(term));
+ });
+ el('totalCount').textContent=filtered.length;
+ el('todayCount').textContent=appointments.filter(a=>a.appointment_date===now).length;
+ el('upcomingCount').textContent=appointments.filter(a=>a.appointment_date>=now).length;
+ const target=el('appointmentList');
+ if(!filtered.length){target.innerHTML='<div class="empty">Nenhum agendamento encontrado para os filtros selecionados.</div>';return;}
+ target.innerHTML=filtered.map(a=>{
+  const time=timeLabel(a.start_time)+(a.end_time?' – '+timeLabel(a.end_time):'');
+  return '<article class="appointment"><div><strong>'+esc(a.services?.name||'Serviço não informado')+'</strong><div class="muted">'+dateLabel(a.appointment_date)+' · '+esc(time)+'</div><div class="muted">Profissional: '+esc(a.professionals?.name||'Não informado')+'</div><div class="muted">Cliente: '+esc(a.customer_id||'Não identificado')+'</div></div><div><span class="pill">'+esc(a.status||'Sem situação')+'</span></div></article>';
+ }).join('');
+}
+el('date').addEventListener('change',render);
+el('statusFilter').addEventListener('change',render);
+el('search').addEventListener('input',render);
+el('todayBtn').addEventListener('click',()=>{el('date').value=today();render();});
+el('allBtn').addEventListener('click',()=>{el('date').value='';render();});
+el('refreshBtn').addEventListener('click',loadAppointments);
+init();
+</script></body></html>
