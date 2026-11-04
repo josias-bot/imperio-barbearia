@@ -45,7 +45,7 @@ document.getElementById('login').addEventListener('submit',async e=>{
  const {data:profile,error:profileError}=await db.from('profiles').select('role').eq('id',data.user.id).single();
  if(profileError){msg.textContent='Login realizado, mas não foi possível verificar seu perfil: '+profileError.message;return;}
  if(profile.role==='admin') location.href='admin.html';
- else if(profile.role==='professional') location.href='profissional.html';
+ else if(profile.role==='professional') location.href='agenda-profissional.html';
  else location.href='cliente.html';
 });
 </script></body></html>
