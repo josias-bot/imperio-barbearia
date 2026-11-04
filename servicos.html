@@ -1,1 +1,104 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Serviços — Império Barbearia</title><style>*{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif}header{padding:20px;background:#111611;border-bottom:1px solid #293629;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1,h2{color:#b7f34a}h1{font-size:22px;margin:0}main{max-width:900px;margin:auto;padding:22px}.back{display:inline-block;padding:12px 15px;border-radius:10px;background:#b7f34a;color:#101510;text-decoration:none;font-weight:bold}.panel{margin-top:22px;padding:20px;border:1px solid #34452f;border-radius:14px;background:#111611;color:#b8c2b3;line-height:1.6}</style></head><body><header><h1>Império Barbearia · Serviços</h1><a class="back" href="admin.html">← Voltar ao painel</a></header><main><h2>Serviços</h2><div class="panel">Cadastro de serviços, preços e duração.<br><br>Esta página individual está criada. As ferramentas de gerenciamento desta seção serão implementadas na próxima etapa.</div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');(async()=>{const {data:{session}}=await db.auth.getSession();if(!session){location.href='login.html';return;}const {data,error}=await db.from('profiles').select('role').eq('id',session.user.id).single();if(error||data.role!=='admin')location.href='login.html';})();</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080a08">
+<title>Serviços — Império Barbearia</title>
+<style>
+:root{--bg:#080a08;--panel:#111611;--lime:#b7f34a;--muted:#b8c2b3;--line:#34452f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f4f7f2;font-family:Arial,sans-serif}
+header{padding:18px 20px;background:var(--panel);border-bottom:1px solid #293629;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:21px;margin:0;color:var(--lime)}main{max-width:950px;margin:auto;padding:20px 16px 50px}
+.back,button{display:inline-block;padding:12px 15px;border-radius:9px;border:0;background:var(--lime);color:#101510;text-decoration:none;font-weight:bold;cursor:pointer}
+h2{font-size:19px;color:var(--lime);margin:22px 0 12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:14px 0}
+label{display:block;color:var(--muted);font-size:13px;margin:12px 0 6px}input,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #42523d;background:#090d09;color:#fff;font:inherit}
+textarea{min-height:76px;resize:vertical}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.checkline{display:flex;align-items:center;gap:9px;margin-top:14px;color:var(--muted)}.checkline input,.procheck input{width:auto}
+.pros{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:8px}
+.procheck{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #293629;border-radius:9px;color:#e9eee5}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.secondary{background:transparent;border:1px solid var(--lime);color:var(--lime)}.danger{background:#482626;color:#ffe4e4}
+#status{color:var(--muted);line-height:1.5;white-space:pre-wrap}.service{border-top:1px solid #293629;padding:14px 0}.service:first-child{border-top:0}.service strong{color:var(--lime);font-size:17px}.meta{color:var(--muted);font-size:13px;line-height:1.6;margin-top:5px}.empty{color:var(--muted);padding:10px 0}
+</style></head>
+<body>
+<header><h1>Império Barbearia · Serviços</h1><a class="back" href="admin.html">← Voltar ao painel</a></header>
+<main>
+<div id="status">Verificando acesso administrativo...</div>
+<section class="card" id="formCard" hidden>
+<h2 id="formTitle">Cadastrar serviço</h2>
+<form id="serviceForm">
+<div class="grid">
+<div><label for="name">Nome do serviço *</label><input id="name" maxlength="100" required placeholder="Ex.: Corte masculino"></div>
+<div><label for="price">Preço (R$) *</label><input id="price" type="number" min="0" step="0.01" required placeholder="0,00"></div>
+<div><label for="duration">Duração (minutos) *</label><input id="duration" type="number" min="5" step="5" value="30" required></div>
+</div>
+<label for="description">Descrição</label><textarea id="description" maxlength="500" placeholder="Detalhes do serviço (opcional)"></textarea>
+<label for="image">URL da imagem (opcional)</label><input id="image" type="url" placeholder="https://...">
+<label>Profissionais habilitados</label><div id="professionalChoices" class="pros"><span class="empty">Carregando profissionais...</span></div>
+<label class="checkline"><input id="active" type="checkbox" checked> Serviço ativo e disponível para agendamento</label>
+<div class="actions"><button id="saveButton" type="submit">Salvar serviço</button><button class="secondary" type="button" id="cancelButton">Cancelar</button></div>
+</form></section>
+<div class="actions"><button id="newButton" type="button">+ Novo serviço</button></div>
+<section class="card"><h2>Serviços cadastrados</h2><div id="serviceList" class="empty">Carregando serviços...</div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');
+const $=id=>document.getElementById(id);
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let editingId=null, professionals=[];
+function message(text){$('status').textContent=text;}
+function resetForm(){editingId=null;$('serviceForm').reset();$('duration').value=30;$('active').checked=true;$('formTitle').textContent='Cadastrar serviço';$('saveButton').textContent='Salvar serviço';document.querySelectorAll('.procheck input').forEach(x=>x.checked=false);$('formCard').hidden=true;}
+async function loadProfessionals(selected=[]){
+ const {data,error}=await db.from('professionals').select('id,name').eq('active',true).order('name');
+ if(error){$('professionalChoices').innerHTML='<span class="empty">Não foi possível carregar os profissionais: '+esc(error.message)+'</span>';return;}
+ professionals=data||[];
+ $('professionalChoices').innerHTML=professionals.length?professionals.map(p=>'<label class="procheck"><input type="checkbox" value="'+esc(p.id)+'" '+(selected.includes(p.id)?'checked':'')+'> '+esc(p.name)+'</label>').join(''):'<span class="empty">Nenhum profissional ativo cadastrado.</span>';
+}
+async function loadServices(){
+ $('serviceList').textContent='Carregando serviços...';
+ const {data,error}=await db.from('services').select('id,name,description,price,duration_minutes,image_url,active,professional_services(professionals(name))').order('name');
+ if(error){$('serviceList').textContent='Erro ao carregar serviços: '+error.message;return;}
+ if(!data?.length){$('serviceList').innerHTML='<div class="empty">Nenhum serviço cadastrado. Toque em “Novo serviço” para começar.</div>';return;}
+ $('serviceList').innerHTML=data.map(s=>{
+ const names=(s.professional_services||[]).map(x=>x.professionals?.name).filter(Boolean).join(', ')||'Nenhum profissional vinculado';
+ return '<article class="service"><strong>'+esc(s.name)+'</strong><div class="meta">R$ '+Number(s.price||0).toLocaleString('pt-BR',{minimumFractionDigits:2})+' · '+Number(s.duration_minutes||0)+' min · '+(s.active?'Ativo':'Inativo')+'<br>Profissionais: '+esc(names)+(s.description?'<br>'+esc(s.description):'')+'</div><div class="actions"><button type="button" class="secondary" data-edit="'+esc(s.id)+'">Editar</button><button type="button" class="danger" data-delete="'+esc(s.id)+'">Excluir</button></div></article>';
+ }).join('');
+}
+async function editService(id){
+ const {data,error}=await db.from('services').select('id,name,description,price,duration_minutes,image_url,active').eq('id',id).single();
+ if(error){message('Não foi possível abrir o serviço: '+error.message);return;}
+ const {data:links}=await db.from('professional_services').select('professional_id').eq('service_id',id);
+ editingId=id;$('name').value=data.name||'';$('price').value=data.price??'';$('duration').value=data.duration_minutes||30;$('description').value=data.description||'';$('image').value=data.image_url||'';$('active').checked=!!data.active;
+ await loadProfessionals((links||[]).map(x=>x.professional_id));
+ $('formTitle').textContent='Editar serviço';$('saveButton').textContent='Salvar alterações';$('formCard').hidden=false;$('formCard').scrollIntoView({behavior:'smooth'});
+}
+$('newButton').onclick=async()=>{resetForm();$('formCard').hidden=false;await loadProfessionals();$('formCard').scrollIntoView({behavior:'smooth'});};
+$('cancelButton').onclick=resetForm;
+$('serviceList').addEventListener('click',async event=>{
+ const edit=event.target.closest('[data-edit]');const del=event.target.closest('[data-delete]');
+ if(edit) await editService(edit.dataset.edit);
+ if(del){const id=del.dataset.delete;if(!confirm('Deseja realmente excluir este serviço?'))return;const {error}=await db.from('services').delete().eq('id',id);if(error)message('Erro ao excluir: '+error.message);else message('Serviço excluído.');await loadServices();}
+});
+$('serviceForm').onsubmit=async event=>{
+ event.preventDefault();$('saveButton').disabled=true;message('Salvando serviço...');
+ const payload={name:$('name').value.trim(),description:$('description').value.trim()||null,price:Number($('price').value),duration_minutes:Number($('duration').value),image_url:$('image').value.trim()||null,active:$('active').checked};
+ let id=editingId, error;
+ if(editingId){({error}=await db.from('services').update(payload).eq('id',editingId));}
+ else {const result=await db.from('services').insert(payload).select('id').single();error=result.error;id=result.data?.id;}
+ if(error){message('Não foi possível salvar: '+error.message);$('saveButton').disabled=false;return;}
+ const chosen=[...document.querySelectorAll('.procheck input:checked')].map(x=>x.value);
+ const {data:existing}=await db.from('professional_services').select('professional_id').eq('service_id',id);
+ const old=(existing||[]).map(x=>x.professional_id);
+ const toAdd=chosen.filter(x=>!old.includes(x)),toRemove=old.filter(x=>!chosen.includes(x));
+ if(toAdd.length){const result=await db.from('professional_services').insert(toAdd.map(professional_id=>({professional_id,service_id:id})));if(result.error)message('Serviço salvo, mas houve erro ao vincular profissionais: '+result.error.message);}
+ for(const professional_id of toRemove){const result=await db.from('professional_services').delete().eq('service_id',id).eq('professional_id',professional_id);if(result.error)message('Serviço salvo, mas não foi possível atualizar todos os vínculos: '+result.error.message);}
+ if(!$('status').textContent.startsWith('Serviço salvo, mas'))message('Serviço salvo com sucesso.');
+ resetForm();$('saveButton').disabled=false;await loadServices();
+};
+(async()=>{
+ const {data:{session}}=await db.auth.getSession();
+ if(!session){location.replace('login.html');return;}
+ const {data:profile,error}=await db.from('profiles').select('role').eq('id',session.user.id).single();
+ if(error||profile?.role!=='admin'){location.replace('login.html');return;}
+ $('formCard').hidden=true;message('Acesso administrativo confirmado.');await Promise.all([loadServices(),loadProfessionals()]);
+})();
+</script></body></html>
