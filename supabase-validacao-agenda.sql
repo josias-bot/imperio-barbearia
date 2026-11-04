@@ -72,3 +72,56 @@ ON public.appointments
 FOR EACH ROW
 EXECUTE FUNCTION public.validate_professional_business_hours();
 
+-- Protege também os bloqueios de horário.
+CREATE OR REPLACE FUNCTION public.validate_professional_time_block_hours()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  professional_name text;
+  weekday integer;
+  opening_time time;
+  closing_time time;
+BEGIN
+  IF NEW.block_date IS NULL OR NEW.start_time IS NULL OR NEW.end_time IS NULL
+     OR NEW.end_time <= NEW.start_time THEN
+    RAISE EXCEPTION 'Data e horário do bloqueio são inválidos.';
+  END IF;
+  IF NEW.block_date < (now() AT TIME ZONE 'America/Recife')::date THEN
+    RAISE EXCEPTION 'Não é permitido criar ou alterar bloqueio em data passada.';
+  END IF;
+  SELECT name INTO professional_name FROM public.professionals
+  WHERE id = NEW.professional_id AND active = true;
+  IF professional_name IS NULL THEN
+    RAISE EXCEPTION 'Profissional não encontrado ou inativo.';
+  END IF;
+  weekday := EXTRACT(DOW FROM NEW.block_date)::integer;
+  IF (lower(professional_name) = 'rodrigo' AND weekday IN (0, 1))
+     OR (lower(professional_name) = 'diogo' AND weekday = 3)
+     OR (lower(professional_name) = 'josias' AND weekday = 2) THEN
+    RAISE EXCEPTION 'Não é permitido bloquear a agenda em dia de folga do profissional.';
+  END IF;
+  IF weekday = 0 THEN
+    opening_time := TIME '08:00'; closing_time := TIME '12:00';
+  ELSIF weekday = 6 THEN
+    opening_time := TIME '08:00'; closing_time := TIME '19:00';
+  ELSE
+    opening_time := TIME '09:00'; closing_time := TIME '19:00';
+  END IF;
+  IF NEW.start_time < opening_time OR NEW.end_time > closing_time THEN
+    RAISE EXCEPTION 'Bloqueio fora do horário de funcionamento da barbearia.';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS validate_professional_time_block_hours
+ON public.professional_time_blocks;
+
+CREATE TRIGGER validate_professional_time_block_hours
+BEFORE INSERT OR UPDATE OF professional_id, block_date, start_time, end_time
+ON public.professional_time_blocks
+FOR EACH ROW
+EXECUTE FUNCTION public.validate_professional_time_block_hours();
