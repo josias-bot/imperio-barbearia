@@ -6,17 +6,19 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
 main{width:100%;max-width:420px;background:#111611;border:1px solid #293629;border-radius:18px;padding:28px}
-h1{color:#b7f34a;margin:0 0 8px}p{color:#b8c2b3}label{display:block;margin:18px 0 7px}input{width:100%;padding:14px;border-radius:10px;border:1px solid #465442;background:#080a08;color:white;font-size:16px}button{width:100%;margin-top:22px;padding:14px;border:0;border-radius:10px;background:#b7f34a;color:#101510;font-weight:bold;font-size:16px}#msg{margin-top:16px;line-height:1.5}
-</style>
-</head>
-<body><main>
-<h1>Império Barbearia</h1><p>Entre com seu telefone e senha.</p>
+h1{color:#b7f34a;margin:0 0 8px}p{color:#b8c2b3}label{display:block;margin:18px 0 7px}
+input{width:100%;padding:14px;border-radius:10px;border:1px solid #465442;background:#080a08;color:white;font-size:16px}
+button{width:100%;margin-top:22px;padding:14px;border:0;border-radius:10px;background:#b7f34a;color:#101510;font-weight:bold;font-size:16px}
+#msg{margin-top:16px;line-height:1.5}
+</style></head><body><main>
+<h1>Império Barbearia</h1><p>Entre com seu e-mail ou telefone e senha.</p>
 <form id="login">
-<label for="phone">Telefone com DDD</label><input id="phone" type="tel" autocomplete="tel" placeholder="5581999999999" required>
-<label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required>
+<label for="identity">E-mail ou telefone com DDD</label>
+<input id="identity" type="text" autocomplete="username" placeholder="seu e-mail ou 5581999999999" required>
+<label for="password">Senha</label>
+<input id="password" type="password" autocomplete="current-password" required>
 <button type="submit">Entrar</button><div id="msg" role="status"></div>
-</form>
-</main>
+</form></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL='https://xvvedeikerapozbajaii.supabase.co';
@@ -25,12 +27,17 @@ const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const msg=document.getElementById('msg');
 document.getElementById('login').addEventListener('submit',async e=>{
  e.preventDefault();msg.textContent='Verificando acesso...';
- const phone=document.getElementById('phone').value.replace(/\D/g,'');
+ const identity=document.getElementById('identity').value.trim();
  const password=document.getElementById('password').value;
- const {data,error}=await db.auth.signInWithPassword({phone,password});
+ const credentials=identity.includes('@')
+   ? {email:identity,password}
+   : {phone:identity.replace(/\D/g,''),password};
+ const {data,error}=await db.auth.signInWithPassword(credentials);
  if(error){msg.textContent='Não foi possível entrar: '+error.message;return;}
  const {data:profile,error:profileError}=await db.from('profiles').select('role').eq('id',data.user.id).single();
  if(profileError){msg.textContent='Login realizado, mas não foi possível verificar seu perfil: '+profileError.message;return;}
- window.location.href=profile.role==='admin'?'admin.html':profile.role==='professional'?'profissional.html':'cliente.html';
+ if(profile.role==='admin') location.href='admin.html';
+ else if(profile.role==='professional') location.href='profissional.html';
+ else location.href='cliente.html';
 });
 </script></body></html>
