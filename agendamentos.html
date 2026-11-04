@@ -26,6 +26,21 @@ input,select{width:100%;padding:12px;border:1px solid #40523a;border-radius:9px;
 <header><h1>Império Barbearia · Agendamentos</h1><a class="back" href="admin.html">← Voltar ao painel</a></header>
 <main>
 <section class="panel">
+<h2>Novo agendamento manual</h2>
+<form id="bookingForm">
+<div class="filters">
+<div><label for="newCustomer">Cliente</label><select id="newCustomer" required><option value="">Carregando clientes...</option></select></div>
+<div><label for="newService">Serviço</label><select id="newService" required><option value="">Carregando serviços...</option></select></div>
+<div><label for="newProfessional">Profissional</label><select id="newProfessional" required><option value="">Escolha o serviço primeiro</option></select></div>
+<div><label for="newDate">Data</label><input id="newDate" type="date" required></div>
+<div><label for="newTime">Horário de início</label><select id="newTime" required><option value="">Escolha serviço, profissional e data</option></select></div>
+</div>
+<div class="muted" id="bookingInfo">O sistema verificará o horário de funcionamento, a folga do profissional e os conflitos de agenda.</div>
+<div class="actions"><button id="createBooking" type="submit">Criar agendamento</button></div>
+</form>
+<div id="bookingStatus" class="muted" role="status"></div>
+</section>
+<section class="panel">
 <h2>Consultar agendamentos</h2>
 <div class="filters">
 <div><label for="date">Data</label><input id="date" type="date"></div>
@@ -52,6 +67,59 @@ const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth
 function message(value){el('status').textContent=value;}
 function dateLabel(value){if(!value)return 'Data não informada';const [y,m,d]=value.split('-');return d+'/'+m+'/'+y;}
 function timeLabel(value){return value?String(value).slice(0,5):'—';}
+
+const dayOff={Rodrigo:[0,1],Diogo:[3],Josias:[2]};
+const pad=n=>String(n).padStart(2,'0');
+const minutes=t=>{const [h,m]=String(t).slice(0,5).split(':').map(Number);return h*60+m;};
+const clock=m=>pad(Math.floor(m/60))+':'+pad(m%60);
+const setBookingStatus=t=>{el('bookingStatus').textContent=t;};
+let bookingCustomers=[],bookingServices=[],bookingProfessionals=[],bookingLinks=[];
+async function loadBookingOptions(){
+ const [cu,se,pr,li]=await Promise.all([
+  db.from('profiles').select('id,full_name,phone').eq('role','customer').order('full_name'),
+  db.from('services').select('id,name,duration_minutes,active,available_to_walkins').eq('active',true).eq('available_to_walkins',true).order('name'),
+  db.from('professionals').select('id,name,active').eq('active',true).order('name'),
+  db.from('professional_services').select('service_id,professional_id')
+ ]);
+ for(const x of [cu,se,pr,li])if(x.error)throw x.error;
+ bookingCustomers=cu.data||[];bookingServices=se.data||[];bookingProfessionals=pr.data||[];bookingLinks=li.data||[];
+ el('newCustomer').innerHTML='<option value="">Selecione o cliente</option>'+bookingCustomers.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.full_name||'Cliente')+(x.phone?' · '+esc(x.phone):'')+'</option>').join('');
+ el('newService').innerHTML='<option value="">Selecione o serviço</option>'+bookingServices.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' · '+esc(x.duration_minutes)+' min</option>').join('');
+ el('newProfessional').innerHTML='<option value="">Selecione o profissional</option>';
+}
+function updateBookingProfessionals(){
+ const sid=el('newService').value;
+ const ids=bookingLinks.filter(x=>x.service_id===sid).map(x=>x.professional_id);
+ const people=bookingProfessionals.filter(p=>ids.includes(p.id));
+ el('newProfessional').innerHTML='<option value="">Selecione o profissional</option>'+people.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join('');
+ updateBookingTimes();
+}
+function businessWindow(date){
+ const d=new Date(date+'T12:00:00').getDay();
+ if(d===0)return [8*60,12*60];
+ if(d===6)return [8*60,19*60];
+ return [9*60,19*60];
+}
+async function updateBookingTimes(){
+ const date=el('newDate').value,service=bookingServices.find(x=>x.id===el('newService').value),pro=bookingProfessionals.find(x=>x.id===el('newProfessional').value);
+ const select=el('newTime');select.innerHTML='<option value="">Carregando horários...</option>';
+ if(!date||!service||!pro){select.innerHTML='<option value="">Escolha serviço, profissional e data</option>';return;}
+ const day=new Date(date+'T12:00:00').getDay(),off=(dayOff[pro.name]||[]).includes(day);
+ if(off){select.innerHTML='<option value="">Profissional de folga nesta data</option>';el('bookingInfo').textContent=pro.name+' não trabalha neste dia.';return;}
+ const [open,close]=businessWindow(date),duration=Number(service.duration_minutes)||30;
+ const {data:busy,error}=await db.from('appointments').select('start_time,end_time,status').eq('professional_id',pro.id).eq('appointment_date',date);
+ if(error){select.innerHTML='<option value="">Erro ao consultar agenda</option>';setBookingStatus('Não foi possível verificar conflitos: '+error.message);return;}
+ const blocked=(busy||[]).filter(a=>!['cancelled','canceled','cancelado'].includes(String(a.status||'').toLowerCase())).map(a=>[minutes(a.start_time),minutes(a.end_time)]);
+ const options=[];
+ for(let start=open;start+duration<=close;start+=30){
+  if(blocked.some(([a,b])=>start<b&&start+duration>a))continue;
+  options.push('<option value="'+clock(start)+'">'+clock(start)+' (até '+clock(start+duration)+')</option>');
+ }
+ select.innerHTML='<option value="">Selecione um horário</option>'+options.join('');
+ el('bookingInfo').textContent='Funcionamento: '+clock(open)+' às '+clock(close)+' · Duração: '+duration+' min. Horários livres atualizados para '+pro.name+'.';
+ if(!options.length)select.innerHTML='<option value="">Nenhum horário disponível</option>';
+}
+
 async function init(){
  const {data:{session}}=await db.auth.getSession();
  if(!session){location.href='login.html';return;}
@@ -60,6 +128,7 @@ async function init(){
  // A tela inicia mostrando todas as datas para facilitar a visão por profissional.
  el('date').value='';
  await loadAppointments();
+ try{await loadBookingOptions();}catch(error){setBookingStatus('Não foi possível carregar opções: '+error.message);}
 }
 async function loadAppointments(){
  message('Carregando agendamentos...');
@@ -103,6 +172,25 @@ function render(){
   return '<section class="proGroup"><div class="proHeader"><strong>'+esc(name)+'</strong><div class="proStats"><span>'+items.length+' agendamento(s)</span><span>'+confirmed+' confirmado(s)</span><span>'+pending+' pendente(s)</span></div></div><div class="proBody">'+rows+'</div></section>';
  }).join('');
 }
+el('newService').addEventListener('change',updateBookingProfessionals);
+el('newProfessional').addEventListener('change',updateBookingTimes);
+el('newDate').addEventListener('change',updateBookingTimes);
+el('bookingForm').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const customer=el('newCustomer').value,service=bookingServices.find(x=>x.id===el('newService').value),professional=bookingProfessionals.find(x=>x.id===el('newProfessional').value),date=el('newDate').value,time=el('newTime').value;
+ if(!customer||!service||!professional||!date||!time){setBookingStatus('Preencha todos os campos.');return;}
+ const start=minutes(time),end=start+(Number(service.duration_minutes)||30);
+ const {data:conflicts,error:checkError}=await db.from('appointments').select('start_time,end_time,status').eq('professional_id',professional.id).eq('appointment_date',date);
+ if(checkError){setBookingStatus('Não foi possível confirmar a disponibilidade: '+checkError.message);return;}
+ if((conflicts||[]).some(a=>!['cancelled','canceled','cancelado'].includes(String(a.status||'').toLowerCase())&&start<minutes(a.end_time)&&end>minutes(a.start_time))){setBookingStatus('Este horário acabou de ser ocupado. Escolha outro.');await updateBookingTimes();return;}
+ el('createBooking').disabled=true;el('createBooking').textContent='Criando...';
+ const {error}=await db.from('appointments').insert({customer_id:customer,service_id:service.id,professional_id:professional.id,appointment_date:date,start_time:time,end_time:clock(end),status:'confirmed'});
+ el('createBooking').disabled=false;el('createBooking').textContent='Criar agendamento';
+ if(error){setBookingStatus('Não foi possível criar o agendamento: '+error.message);return;}
+ setBookingStatus('Agendamento criado com sucesso!');
+ el('bookingForm').reset();el('newProfessional').innerHTML='<option value="">Selecione o profissional</option>';el('newTime').innerHTML='<option value="">Escolha serviço, profissional e data</option>';
+ await loadAppointments();
+});
 el('date').addEventListener('change',render);
 el('statusFilter').addEventListener('change',render);
 el('search').addEventListener('input',render);
