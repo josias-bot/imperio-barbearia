@@ -71,6 +71,7 @@ async function agenda(){
 async function times(){
  let svc=services.find(x=>x.id===$('service').value),date=$('bookDate').value;
  $('bookTime').innerHTML='<option value="">Consultando horários...</option>';if(!svc||!date){$('bookTime').innerHTML='<option value="">Selecione serviço e data</option>';return}
+ if(date<today()){$('bookTime').innerHTML='<option value="">Escolha uma data futura</option>';msg('bookMsg','Não é possível agendar em uma data passada.');return}
  let wd=new Date(date+'T12:00:00').getDay();if((folgas[pro.name]||[]).includes(wd)){$('bookTime').innerHTML='<option value="">Profissional de folga</option>';return}
  let [a,b]=await Promise.all([db.from('appointments').select('start_time,end_time,status').eq('professional_id',pro.id).eq('appointment_date',date),db.from('professional_time_blocks').select('start_time,end_time').eq('professional_id',pro.id).eq('block_date',date)]);
  if(a.error||b.error){$('bookTime').innerHTML='<option value="">Erro ao consultar agenda</option>';msg('bookMsg',(a.error||b.error).message);return}
@@ -82,7 +83,20 @@ $('service').addEventListener('change',times);$('bookDate').addEventListener('ch
 $('booking').addEventListener('submit',async e=>{
  e.preventDefault();$('bookBtn').disabled=true;msg('bookMsg','Salvando agendamento...');
  let svc=services.find(x=>x.id===$('service').value),start=$('bookTime').value;if(!svc||!start){msg('bookMsg','Escolha serviço e horário.');$('bookBtn').disabled=false;return}
- let end=clock(minutes(start)+Number(svc.duration_minutes));
+ let date=$('bookDate').value,day=new Date(date+'T12:00:00').getDay(),startMinutes=minutes(start),endMinutes=startMinutes+Number(svc.duration_minutes||30);
+ let open=day===0?480:day===6?480:540,close=day===0?720:1140;
+ if(!date||date<today()){msg('bookMsg','Escolha uma data de hoje ou futura.');$('bookBtn').disabled=false;return}
+ if((folgas[pro.name]||[]).includes(day)){msg('bookMsg','Este profissional não trabalha nesta data.');$('bookBtn').disabled=false;return}
+ if(startMinutes<open||endMinutes>close){msg('bookMsg','O horário escolhido está fora do funcionamento da barbearia.');$('bookBtn').disabled=false;return}
+ let end=clock(endMinutes);
+ let [busyCheck,blockCheck]=await Promise.all([
+  db.from('appointments').select('start_time,end_time,status').eq('professional_id',pro.id).eq('appointment_date',date),
+  db.from('professional_time_blocks').select('start_time,end_time').eq('professional_id',pro.id).eq('block_date',date)
+ ]);
+ if(busyCheck.error||blockCheck.error){msg('bookMsg','Não foi possível validar a agenda: '+(busyCheck.error||blockCheck.error).message);$('bookBtn').disabled=false;return}
+ const overlaps=(busyCheck.data||[]).filter(x=>!['cancelled','canceled','cancelado'].includes(String(x.status||'').toLowerCase())).some(x=>startMinutes<minutes(x.end_time)&&endMinutes>minutes(x.start_time));
+ const blocked=(blockCheck.data||[]).some(x=>startMinutes<minutes(x.end_time)&&endMinutes>minutes(x.start_time));
+ if(overlaps||blocked){msg('bookMsg',blocked?'Este horário está bloqueado. Escolha outro.':'Este horário já está ocupado. Escolha outro.');await times();$('bookBtn').disabled=false;return}
  let r=await db.from('appointments').insert({customer_id:$('customer').value,professional_id:pro.id,service_id:svc.id,appointment_date:$('bookDate').value,start_time:start,end_time:end,status:'scheduled'});
  msg('bookMsg',r.error?'Não foi possível agendar: '+r.error.message:'Agendamento criado com sucesso.');if(!r.error){await agenda();await times()}$('bookBtn').disabled=false;
 });
