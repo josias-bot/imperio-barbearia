@@ -185,7 +185,11 @@ el('bookingForm').addEventListener('submit',async event=>{
  event.preventDefault();
  const customer=el('newCustomer').value,service=bookingServices.find(x=>x.id===el('newService').value),professional=bookingProfessionals.find(x=>x.id===el('newProfessional').value),date=el('newDate').value,time=el('newTime').value;
  if(!customer||!service||!professional||!date||!time){setBookingStatus('Preencha todos os campos.');return;}
- const start=minutes(time),end=start+(Number(service.duration_minutes)||30);
+ if(date<today()){setBookingStatus('Não é possível criar agendamento em uma data passada.');return;}
+ const day=new Date(date+'T12:00:00').getDay(),off=(dayOff[professional.name]||[]).includes(day);
+ if(off){setBookingStatus('Este profissional está de folga nesta data.');return;}
+ const [open,close]=businessWindow(date),start=minutes(time),end=start+(Number(service.duration_minutes)||30);
+ if(start<open||end>close){setBookingStatus('O horário escolhido está fora do funcionamento da barbearia.');return;}
  const [conflictsResult,blocksResult]=await Promise.all([
   db.from('appointments').select('start_time,end_time,status').eq('professional_id',professional.id).eq('appointment_date',date),
   db.from('professional_time_blocks').select('start_time,end_time').eq('professional_id',professional.id).eq('block_date',date)
