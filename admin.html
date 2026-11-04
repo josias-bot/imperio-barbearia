@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Administrativo — Império Barbearia</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif}
+header{padding:20px;background:#111611;border-bottom:1px solid #293629;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{margin:0;color:#b7f34a;font-size:23px}header small{color:#aeb9a8}
+button,.tile{border:1px solid #34452f;background:#141b13;color:#eff6e9;border-radius:12px;padding:13px}
+button{cursor:pointer}.primary{background:#b7f34a;color:#101510;border:0;font-weight:bold}
+main{max-width:1100px;margin:auto;padding:22px}
+h2{color:#b7f34a;font-size:19px;margin:24px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
+.tile{min-height:105px}.tile span{display:block;color:#b8c2b3;font-size:13px}.tile strong{display:block;font-size:27px;margin-top:12px;color:#b7f34a}
+.actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.action{text-align:left;min-height:74px;font-weight:bold}.action small{display:block;color:#b8c2b3;font-weight:normal;margin-top:6px}
+#notice{color:#b8c2b3;line-height:1.5;margin-top:18px}
+</style></head>
+<body>
+<header><div><h1>Império Barbearia</h1><small>Painel administrativo</small></div><button id="logout">Sair</button></header>
+<main>
+<div id="welcome">Verificando acesso...</div>
+<h2>Resumo do negócio</h2>
+<div class="grid">
+<div class="tile"><span>Clientes cadastrados</span><strong id="customers">—</strong></div>
+<div class="tile"><span>Profissionais ativos</span><strong id="professionals">—</strong></div>
+<div class="tile"><span>Serviços ativos</span><strong id="services">—</strong></div>
+<div class="tile"><span>Planos ativos</span><strong id="plans">—</strong></div>
+<div class="tile"><span>Assinaturas</span><strong id="subscriptions">—</strong></div>
+<div class="tile"><span>Agendamentos</span><strong id="appointments">—</strong></div>
+<div class="tile"><span>Produtos ativos</span><strong id="products">—</strong></div>
+<div class="tile"><span>Pagamentos</span><strong id="payments">—</strong></div>
+</div>
+<h2>Gerenciamento</h2>
+<div class="actions">
+<button class="action" data-section="clientes">Clientes<small>Consultar cadastros</small></button>
+<button class="action" data-section="servicos">Serviços<small>Cadastrar serviços, preços e duração</small></button>
+<button class="action" data-section="profissionais">Profissionais<small>Equipe e serviços realizados</small></button>
+<button class="action" data-section="planos">Planos e benefícios<small>Clube Tradicional e Clube Premium</small></button>
+<button class="action" data-section="agendamentos">Agendamentos<small>Consultar e gerenciar horários</small></button>
+<button class="action" data-section="produtos">Produtos e estoque<small>Produtos e movimentações</small></button>
+<button class="action" data-section="financeiro">Financeiro<small>Pagamentos e relatórios</small></button>
+</div>
+<div id="notice">Este é o início do painel. Os indicadores são carregados do Supabase. As telas de cadastro e edição serão implementadas nas próximas etapas.</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://xvvedeikerapozbajaii.supabase.co';
+const SUPABASE_KEY='sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+async function init(){
+ const {data:{session}}=await db.auth.getSession();
+ if(!session){location.href='login.html';return;}
+ const {data:profile,error}=await db.from('profiles').select('full_name,role').eq('id',session.user.id).single();
+ if(error||profile.role!=='admin'){await db.auth.signOut();location.href='login.html';return;}
+ document.getElementById('welcome').textContent='Bem-vindo, '+(profile.full_name||'Administrador')+'!';
+ const counts=[['customers','profiles','role','customer'],['professionals','professionals','active',true],['services','services','active',true],['plans','plans','active',true],['subscriptions','subscriptions',null,null],['appointments','appointments',null,null],['products','products','active',true],['payments','payments',null,null]];
+ await Promise.all(counts.map(async ([id,table,col,val])=>{
+   let q=db.from(table).select('*',{count:'exact',head:true});
+   if(col) q=q.eq(col,val);
+   const {count,error}=await q;
+   document.getElementById(id).textContent=error?'—':count;
+ }));
+}
+document.getElementById('logout').onclick=async()=>{await db.auth.signOut();location.href='login.html';};
+document.querySelectorAll('[data-section]').forEach(b=>b.onclick=()=>{document.getElementById('notice').textContent='A seção "'+b.dataset.section+'" será construída na próxima etapa. Nenhum dado foi alterado.';});
+init();
+</script></body></html>

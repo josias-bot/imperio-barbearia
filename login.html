@@ -1,25 +1,36 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#090b09"><title>Entrar | Império Barbearia</title><style>
-:root{--bg:#090b09;--panel:#121712;--lime:#b7f52b;--muted:#aab3a4;--line:#293226}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f5f7f2;font-family:Arial,sans-serif}
-header{padding:22px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
-.brand{font-weight:900;letter-spacing:1.5px;color:var(--lime);font-size:20px}.tag{font-size:11px;color:var(--muted);letter-spacing:2px}
-main{max-width:620px;margin:auto;padding:34px 16px 60px}.hero{text-align:center;padding:20px 8px 25px}
-h1{font-size:clamp(30px,8vw,46px);line-height:1.04;margin:0 0 14px;font-weight:900}h1 span{color:var(--lime)}
-p{color:var(--muted);line-height:1.55}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:14px}
-h2{font-size:20px;margin:0 0 14px;color:var(--lime)}label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
-input{width:100%;padding:13px;border-radius:9px;border:1px solid var(--line);background:#090d09;color:white;font-size:16px}
-button,.button{display:block;text-align:center;text-decoration:none;border:0;border-radius:9px;padding:14px 16px;background:var(--lime);color:#10150a;font-weight:800;font-size:15px;cursor:pointer;width:100%;margin-top:14px}
-.button.secondary{background:transparent;color:var(--lime);border:1px solid var(--lime)}
-.notice{padding:12px;border-radius:9px;background:#1b2415;color:var(--lime);font-size:13px;margin-top:12px;white-space:pre-wrap}
-.hidden{display:none!important}.muted{color:var(--muted);font-size:13px}footer{text-align:center;padding:24px;color:#788174;font-size:12px}
-</style></head><body><header><div><div class="brand">IMPÉRIO BARBEARIA</div><div class="tag">ESTILO • CUIDADO • EXCLUSIVIDADE</div></div><div class="muted">ÁREA DO CLIENTE</div></header><main><section class="hero"><div class="tag">BEM-VINDO DE VOLTA</div><h1>Entrar na<br><span>minha conta</span></h1><p>Use seu telefone e sua senha para acessar.</p></section><section class="card"><h2>Login</h2>
-<label for="phone">Número de telefone com DDD</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(81) 99999-9999">
-<label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" placeholder="Sua senha">
-<button id="loginBtn">Entrar</button><div id="msg" class="notice hidden"></div>
-<p class="muted">Ainda não tem conta? <a href="cadastro.html" style="color:var(--lime)">Criar cadastro</a></p><p class="muted"><a href="index.html" style="color:var(--lime)">Voltar ao início</a></p></section></main><footer>© Império Barbearia — Todos os direitos reservados.</footer><script type="module">
-import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-const sb=createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');
-function phoneE164(value){const digits=value.replace(/\\D/g,'');if(digits.startsWith('55')&&(digits.length===12||digits.length===13))return '+'+digits;if(digits.length===10||digits.length===11)return '+55'+digits;return '';}
-const el=id=>document.getElementById(id);
-el('loginBtn').onclick=async()=>{const phone=phoneE164(el('phone').value),password=el('password').value,msg=el('msg'),btn=el('loginBtn');msg.classList.remove('hidden');if(!phone){msg.textContent='Informe um telefone válido com DDD.';msg.style.color='#ff9b9b';return;}btn.disabled=true;msg.textContent='Verificando acesso...';const {error}=await sb.auth.signInWithPassword({phone,password});btn.disabled=false;if(error){msg.textContent=error.message;msg.style.color='#ff9b9b';}else{msg.textContent='Login realizado! Abrindo sua área do cliente...';msg.style.color='var(--lime)';setTimeout(()=>{location.href='cliente.html';},500);}};
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Entrar — Império Barbearia</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
+main{width:100%;max-width:420px;background:#111611;border:1px solid #293629;border-radius:18px;padding:28px}
+h1{color:#b7f34a;margin:0 0 8px}p{color:#b8c2b3}label{display:block;margin:18px 0 7px}input{width:100%;padding:14px;border-radius:10px;border:1px solid #465442;background:#080a08;color:white;font-size:16px}button{width:100%;margin-top:22px;padding:14px;border:0;border-radius:10px;background:#b7f34a;color:#101510;font-weight:bold;font-size:16px}#msg{margin-top:16px;line-height:1.5}
+</style>
+</head>
+<body><main>
+<h1>Império Barbearia</h1><p>Entre com seu telefone e senha.</p>
+<form id="login">
+<label for="phone">Telefone com DDD</label><input id="phone" type="tel" autocomplete="tel" placeholder="5581999999999" required>
+<label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required>
+<button type="submit">Entrar</button><div id="msg" role="status"></div>
+</form>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://xvvedeikerapozbajaii.supabase.co';
+const SUPABASE_KEY='sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const msg=document.getElementById('msg');
+document.getElementById('login').addEventListener('submit',async e=>{
+ e.preventDefault();msg.textContent='Verificando acesso...';
+ const phone=document.getElementById('phone').value.replace(/\D/g,'');
+ const password=document.getElementById('password').value;
+ const {data,error}=await db.auth.signInWithPassword({phone,password});
+ if(error){msg.textContent='Não foi possível entrar: '+error.message;return;}
+ const {data:profile,error:profileError}=await db.from('profiles').select('role').eq('id',data.user.id).single();
+ if(profileError){msg.textContent='Login realizado, mas não foi possível verificar seu perfil: '+profileError.message;return;}
+ window.location.href=profile.role==='admin'?'admin.html':profile.role==='professional'?'profissional.html':'cliente.html';
+});
 </script></body></html>
