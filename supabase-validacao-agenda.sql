@@ -14,6 +14,15 @@ DECLARE
   opening_time time;
   closing_time time;
 BEGIN
+  -- Atualizações apenas de situação não devem revalidar a data original.
+  IF TG_OP = 'UPDATE'
+     AND NEW.professional_id IS NOT DISTINCT FROM OLD.professional_id
+     AND NEW.appointment_date IS NOT DISTINCT FROM OLD.appointment_date
+     AND NEW.start_time IS NOT DISTINCT FROM OLD.start_time
+     AND NEW.end_time IS NOT DISTINCT FROM OLD.end_time THEN
+    RETURN NEW;
+  END IF;
+
   -- Cancelamentos não precisam obedecer à janela de atendimento.
   IF lower(coalesce(NEW.status, '')) IN ('cancelled', 'canceled', 'cancelado') THEN
     RETURN NEW;
