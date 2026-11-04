@@ -47,7 +47,7 @@ input,select{width:100%;padding:12px;border:1px solid #40523a;border-radius:9px;
 const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');
 const el=id=>document.getElementById(id);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let appointments=[];
+let appointments=[],customerProfiles={};
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 function message(value){el('status').textContent=value;}
 function dateLabel(value){if(!value)return 'Data não informada';const [y,m,d]=value.split('-');return d+'/'+m+'/'+y;}
@@ -69,6 +69,9 @@ async function loadAppointments(){
  el('refreshBtn').disabled=false;
  if(error){message('Não foi possível carregar os agendamentos: '+error.message);el('appointmentList').innerHTML='';return;}
  appointments=data||[];
+ const customerIds=[...new Set(appointments.map(a=>a.customer_id).filter(Boolean))];
+ customerProfiles={};
+ if(customerIds.length){const {data:profiles,error:profilesError}=await db.from('profiles').select('id,full_name,phone').in('id',customerIds);if(!profilesError)(profiles||[]).forEach(p=>customerProfiles[p.id]=p);}
  const statuses=[...new Set(appointments.map(a=>a.status).filter(Boolean))].sort();
  el('statusFilter').innerHTML='<option value="">Todas as situações</option>'+statuses.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join('');
  message(appointments.length+' agendamento(s) carregado(s).');
@@ -77,7 +80,8 @@ async function loadAppointments(){
 function render(){
  const date=el('date').value, status=el('statusFilter').value, term=el('search').value.trim().toLocaleLowerCase('pt-BR'), now=today();
  const filtered=appointments.filter(a=>{
-  const text=[a.customer_id,a.services?.name,a.professionals?.name,a.status].join(' ').toLocaleLowerCase('pt-BR');
+  const customer=customerProfiles[a.customer_id];
+  const text=[customer?.full_name,customer?.phone,a.customer_id,a.services?.name,a.professionals?.name,a.status].join(' ').toLocaleLowerCase('pt-BR');
   return (!date||a.appointment_date===date)&&(!status||a.status===status)&&(!term||text.includes(term));
  });
  el('totalCount').textContent=filtered.length;
