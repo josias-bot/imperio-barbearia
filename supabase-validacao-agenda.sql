@@ -125,3 +125,33 @@ BEFORE INSERT OR UPDATE OF professional_id, block_date, start_time, end_time
 ON public.professional_time_blocks
 FOR EACH ROW
 EXECUTE FUNCTION public.validate_professional_time_block_hours();
+
+-- Permite que o profissional atualize somente a situação dos próprios agendamentos.
+-- O administrador também pode alterar a situação pela mesma coluna.
+DROP POLICY IF EXISTS "Professionals update own appointment status" ON public.appointments;
+CREATE POLICY "Professionals update own appointment status"
+ON public.appointments
+FOR UPDATE
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.professionals p
+    WHERE p.id = appointments.professional_id
+      AND p.profile_id = auth.uid()
+      AND p.active = true
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.professionals p
+    WHERE p.id = appointments.professional_id
+      AND p.profile_id = auth.uid()
+      AND p.active = true
+  )
+);
+
+-- Restringe a permissão de UPDATE dos usuários autenticados à coluna status.
+-- A política "Admins manage appointments" continua controlando o acesso administrativo.
+REVOKE UPDATE ON public.appointments FROM anon, authenticated;
+GRANT UPDATE (status) ON public.appointments TO authenticated;
+
