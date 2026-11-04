@@ -1,0 +1,40 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#090b09"><title>Criar conta | Império Barbearia</title><style>
+:root{--bg:#090b09;--panel:#121712;--lime:#b7f52b;--muted:#aab3a4;--line:#293226}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f5f7f2;font-family:Arial,sans-serif}
+header{padding:22px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-weight:900;letter-spacing:1.5px;color:var(--lime);font-size:20px}.tag{font-size:11px;color:var(--muted);letter-spacing:2px}
+main{max-width:620px;margin:auto;padding:34px 16px 60px}.hero{text-align:center;padding:20px 8px 25px}
+h1{font-size:clamp(30px,8vw,46px);line-height:1.04;margin:0 0 14px;font-weight:900}h1 span{color:var(--lime)}
+p{color:var(--muted);line-height:1.55}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:14px}
+h2{font-size:20px;margin:0 0 14px;color:var(--lime)}label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+input{width:100%;padding:13px;border-radius:9px;border:1px solid var(--line);background:#090d09;color:white;font-size:16px}
+button,.button{display:block;text-align:center;text-decoration:none;border:0;border-radius:9px;padding:14px 16px;background:var(--lime);color:#10150a;font-weight:800;font-size:15px;cursor:pointer;width:100%;margin-top:14px}
+.button.secondary{background:transparent;color:var(--lime);border:1px solid var(--lime)}
+.notice{padding:12px;border-radius:9px;background:#1b2415;color:var(--lime);font-size:13px;margin-top:12px;white-space:pre-wrap}
+.hidden{display:none!important}.muted{color:var(--muted);font-size:13px}footer{text-align:center;padding:24px;color:#788174;font-size:12px}
+</style></head><body><header><div><div class="brand">IMPÉRIO BARBEARIA</div><div class="tag">ESTILO • CUIDADO • EXCLUSIVIDADE</div></div><div class="muted">ÁREA DO CLIENTE</div></header><main><section class="hero"><div class="tag">FAÇA PARTE</div><h1>Crie sua<br><span>conta</span></h1><p>Preencha seus dados para começar.</p></section><section class="card"><h2>Novo cadastro</h2>
+<label for="firstName">Nome</label><input id="firstName" autocomplete="given-name" placeholder="Seu nome">
+<label for="lastName">Sobrenome</label><input id="lastName" autocomplete="family-name" placeholder="Seu sobrenome">
+<label for="phone">Número de telefone com DDD</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(81) 99999-9999">
+<label for="password">Senha</label><input id="password" type="password" autocomplete="new-password" placeholder="Mínimo de 6 caracteres">
+<button id="signupBtn">Criar minha conta</button><div id="msg" class="notice hidden"></div>
+<p class="muted">Já tem conta? <a href="login.html" style="color:var(--lime)">Entrar</a></p><p class="muted"><a href="index.html" style="color:var(--lime)">Voltar ao início</a></p></section></main><footer>© Império Barbearia — Todos os direitos reservados.</footer><script type="module">
+import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const sb=createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');
+const el=id=>document.getElementById(id);
+function phoneE164(value){const digits=value.replace(/\\D/g,'');if(digits.startsWith('55')&&(digits.length===12||digits.length===13))return '+'+digits;if(digits.length===10||digits.length===11)return '+55'+digits;return '';}
+el('signupBtn').onclick=async()=>{
+ const first=el('firstName').value.trim(),last=el('lastName').value.trim(),phone=phoneE164(el('phone').value),password=el('password').value;
+ const msg=el('msg');msg.classList.remove('hidden');
+ if(!first||!last){msg.textContent='Informe seu nome e sobrenome.';msg.style.color='#ff9b9b';return;}
+ if(!phone){msg.textContent='Informe um telefone válido com DDD.';msg.style.color='#ff9b9b';return;}
+ if(password.length<6){msg.textContent='A senha precisa ter pelo menos 6 caracteres.';msg.style.color='#ff9b9b';return;}
+ const btn=el('signupBtn');btn.disabled=true;msg.textContent='Criando sua conta...';
+ const fullName=first+' '+last;
+ const {data,error}=await sb.auth.signUp({phone,password,options:{data:{full_name:fullName,first_name:first,last_name:last,phone}}});
+ btn.disabled=false;
+ if(error){msg.textContent=error.message;msg.style.color='#ff9b9b';}
+ else if(data.session){msg.textContent='Cadastro realizado! Sua conta já está criada. Você já pode entrar.';msg.style.color='var(--lime)';}
+ else{msg.textContent='Cadastro enviado, mas o Supabase ainda está exigindo confirmação. Confira a configuração “Confirm phone” no painel Supabase.';msg.style.color='#ffcf70';}
+};
+</script></body></html>

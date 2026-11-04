@@ -1,103 +1,15 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#090b09">
-  <title>Império Barbearia</title>
-  <style>
-    :root{--bg:#090b09;--panel:#121712;--lime:#b7f52b;--muted:#aab3a4;--line:#293226}
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:#f5f7f2;font-family:Arial,sans-serif}
-    header{padding:22px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
-    .brand{font-weight:900;letter-spacing:1.5px;color:var(--lime);font-size:20px}.tag{font-size:11px;color:var(--muted);letter-spacing:2px}
-    main{max-width:920px;margin:auto;padding:28px 16px 60px}.hero{padding:32px 8px 25px}
-    h1{font-size:clamp(32px,8vw,54px);line-height:1.02;margin:0 0 14px;font-weight:900}
-    h1 span{color:var(--lime)} p{color:var(--muted);line-height:1.55}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:14px}
-    h2{font-size:19px;margin:0 0 14px;color:var(--lime)} label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
-    input{width:100%;padding:13px;border-radius:9px;border:1px solid var(--line);background:#090d09;color:white;font-size:16px}
-    button{border:0;border-radius:9px;padding:13px 16px;background:var(--lime);color:#10150a;font-weight:800;font-size:15px;cursor:pointer;width:100%;margin-top:12px}
-    button.secondary{background:transparent;color:var(--lime);border:1px solid var(--lime)}
-    button:disabled{opacity:.55;cursor:wait}.hidden{display:none!important}
-    .notice{padding:12px;border-radius:9px;background:#1b2415;color:var(--lime);font-size:13px;margin-top:12px;white-space:pre-wrap}
-    .item{padding:13px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}
-    .muted{color:var(--muted);font-size:13px}.topline{display:flex;justify-content:space-between;gap:10px;align-items:center}
-    footer{text-align:center;padding:24px;color:#788174;font-size:12px}
-  </style>
-</head>
-<body>
-<header><div><div class="brand">IMPÉRIO BARBEARIA</div><div class="tag">ESTILO • CUIDADO • EXCLUSIVIDADE</div></div><div class="muted">ÁREA DO CLIENTE</div></header>
-<main>
-  <section class="hero">
-    <div class="tag">SEJA BEM-VINDO</div>
-    <h1>Seu estilo.<br><span>Seu Império.</span></h1>
-    <p>Entre na sua conta para acompanhar seus planos e, em breve, realizar seus agendamentos diretamente por aqui.</p>
-  </section>
-  <section id="auth" class="grid">
-    <div class="card">
-      <h2>Entrar</h2>
-      <label for="loginEmail">E-mail</label><input id="loginEmail" type="email" autocomplete="email" placeholder="seuemail@exemplo.com">
-      <label for="loginPass">Senha</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="Sua senha">
-      <button id="loginBtn">Entrar na minha conta</button>
-      <div id="loginMsg" class="notice hidden"></div>
-    </div>
-    <div class="card">
-      <h2>Criar cadastro</h2>
-      <label for="fullName">Nome completo</label><input id="fullName" autocomplete="name" placeholder="Seu nome">
-      <label for="phone">Telefone</label><input id="phone" type="tel" autocomplete="tel" placeholder="(00) 00000-0000">
-      <label for="signupEmail">E-mail</label><input id="signupEmail" type="email" autocomplete="email" placeholder="seuemail@exemplo.com">
-      <label for="signupPass">Criar senha</label><input id="signupPass" type="password" autocomplete="new-password" placeholder="Mínimo de 6 caracteres">
-      <button id="signupBtn">Criar minha conta</button>
-      <div id="signupMsg" class="notice hidden"></div>
-    </div>
-  </section>
-  <section id="account" class="hidden">
-    <div class="card">
-      <div class="topline"><h2>Minha conta</h2><button id="logoutBtn" class="secondary" style="width:auto;margin:0">Sair</button></div>
-      <p id="welcome"></p>
-      <div class="grid">
-        <div><h2>Meus planos</h2><div id="plans" class="muted">Carregando planos...</div></div>
-        <div><h2>Serviços</h2><div id="services" class="muted">Carregando serviços...</div></div>
-      </div>
-      <div id="accountMsg" class="notice">Seu acesso foi conectado. As funções de assinatura, pagamento e agendamento serão ativadas nas próximas etapas.</div>
-    </div>
-  </section>
-</main>
-<footer>© Império Barbearia — Todos os direitos reservados.</footer>
-<script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-  const SUPABASE_URL = 'https://xvvedeikerapozbajaii.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s';
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const $ = id => document.getElementById(id);
-  function message(id, text, isError=false){const el=$(id);el.textContent=text;el.classList.remove('hidden');if(isError)el.style.color='#ff9b9b';else el.style.color='var(--lime)';}
-  function busy(id, value){$(id).disabled=value;}
-  async function loadPublicData(){
-    const [p,s]=await Promise.all([
-      supabase.from('plans').select('name,description,price').eq('active',true).order('name'),
-      supabase.from('services').select('name,description,price,duration_minutes').eq('active',true).order('name')
-    ]);
-    $('plans').innerHTML=''; $('services').innerHTML='';
-    if(p.error) $('plans').textContent='Não foi possível carregar os planos agora.';
-    else if(!p.data.length) $('plans').textContent='Planos em preparação.';
-    else p.data.forEach(x=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<strong>${escapeHtml(x.name)}</strong><div class="muted">${escapeHtml(x.description||'')}</div><div class="muted">R$ ${Number(x.price).toFixed(2).replace('.',',')}</div>`;$('plans').append(d);});
-    if(s.error) $('services').textContent='Não foi possível carregar os serviços agora.';
-    else if(!s.data.length) $('services').textContent='Serviços em preparação.';
-    else s.data.forEach(x=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<strong>${escapeHtml(x.name)}</strong><div class="muted">${escapeHtml(x.description||'')}</div><div class="muted">R$ ${Number(x.price).toFixed(2).replace('.',',')} • ${x.duration_minutes} min</div>`;$('services').append(d);});
-  }
-  function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-  async function refresh(){
-    const {data:{session}}=await supabase.auth.getSession();
-    $('auth').classList.toggle('hidden',!!session);$('account').classList.toggle('hidden',!session);
-    if(session){const {data}=await supabase.from('profiles').select('full_name').eq('id',session.user.id).maybeSingle();$('welcome').textContent=`Olá${data?.full_name?' , '+data.full_name:''}! Você está conectado.`;await loadPublicData();}
-  }
-  $('loginBtn').onclick=async()=>{busy('loginBtn',true);const {error}=await supabase.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPass').value});busy('loginBtn',false);if(error)message('loginMsg',error.message,true);else await refresh();};
-  $('signupBtn').onclick=async()=>{busy('signupBtn',true);const {data,error}=await supabase.auth.signUp({email:$('signupEmail').value.trim(),password:$('signupPass').value,options:{data:{full_name:$('fullName').value.trim(),phone:$('phone').value.trim()}}});busy('signupBtn',false);if(error)message('signupMsg',error.message,true);else message('signupMsg',data.session?'Cadastro criado!':'Cadastro criado. Verifique seu e-mail para confirmar a conta.');await refresh();};
-  $('logoutBtn').onclick=async()=>{await supabase.auth.signOut();await refresh();};
-  supabase.auth.onAuthStateChange(()=>setTimeout(refresh,0));
-  refresh();
-</script>
-</body>
-</html>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#090b09"><title>Início | Império Barbearia</title><style>
+:root{--bg:#090b09;--panel:#121712;--lime:#b7f52b;--muted:#aab3a4;--line:#293226}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f5f7f2;font-family:Arial,sans-serif}
+header{padding:22px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-weight:900;letter-spacing:1.5px;color:var(--lime);font-size:20px}.tag{font-size:11px;color:var(--muted);letter-spacing:2px}
+main{max-width:620px;margin:auto;padding:34px 16px 60px}.hero{text-align:center;padding:20px 8px 25px}
+h1{font-size:clamp(30px,8vw,46px);line-height:1.04;margin:0 0 14px;font-weight:900}h1 span{color:var(--lime)}
+p{color:var(--muted);line-height:1.55}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:14px}
+h2{font-size:20px;margin:0 0 14px;color:var(--lime)}label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+input{width:100%;padding:13px;border-radius:9px;border:1px solid var(--line);background:#090d09;color:white;font-size:16px}
+button,.button{display:block;text-align:center;text-decoration:none;border:0;border-radius:9px;padding:14px 16px;background:var(--lime);color:#10150a;font-weight:800;font-size:15px;cursor:pointer;width:100%;margin-top:14px}
+.button.secondary{background:transparent;color:var(--lime);border:1px solid var(--lime)}
+.notice{padding:12px;border-radius:9px;background:#1b2415;color:var(--lime);font-size:13px;margin-top:12px;white-space:pre-wrap}
+.hidden{display:none!important}.muted{color:var(--muted);font-size:13px}footer{text-align:center;padding:24px;color:#788174;font-size:12px}
+</style></head><body><header><div><div class="brand">IMPÉRIO BARBEARIA</div><div class="tag">ESTILO • CUIDADO • EXCLUSIVIDADE</div></div><div class="muted">ÁREA DO CLIENTE</div></header><main><section class="hero"><div class="tag">SEJA BEM-VINDO</div><h1>Seu estilo.<br><span>Seu Império.</span></h1><p>Acesse sua conta ou faça seu cadastro para acompanhar sua experiência na Império Barbearia.</p></section><section class="card"><h2>Área do cliente</h2><a class="button" href="login.html">Entrar na minha conta</a><a class="button secondary" href="cadastro.html">Criar minha conta</a></section></main><footer>© Império Barbearia — Todos os direitos reservados.</footer></body></html>
