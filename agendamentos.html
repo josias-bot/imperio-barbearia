@@ -176,8 +176,8 @@ function render(){
  const groups={};
  filtered.forEach(a=>{const name=a.professionals?.name||'Profissional não informado';(groups[name]??=[]).push(a);});
  target.innerHTML=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0],'pt-BR')).map(([name,items])=>{
-  const confirmed=items.filter(a=>String(a.status||'').toLowerCase().includes('confirm')).length;
-  const pending=items.filter(a=>String(a.status||'').toLowerCase().includes('pend')).length;
+  const confirmed=items.filter(a=>['confirmed','in_progress'].includes(String(a.status||'').toLowerCase())).length;
+  const pending=items.filter(a=>['scheduled','pending','pendente'].includes(String(a.status||'').toLowerCase())).length;
   const rows=items.map(a=>{
    const time=timeLabel(a.start_time)+(a.end_time?' – '+timeLabel(a.end_time):'');
    const customer=customerProfiles[a.customer_id];
