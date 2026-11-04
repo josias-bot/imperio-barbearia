@@ -17,7 +17,7 @@ input,select{width:100%;padding:12px;border:1px solid #40523a;border-radius:9px;
 #status{color:#b8c2b3;line-height:1.5;margin:12px 0}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
 .stat{padding:14px;border-radius:10px;background:#0b100b;border:1px solid #293629}.stat strong{display:block;color:#b7f34a;font-size:22px}.muted{color:#aab5a5;font-size:13px;line-height:1.6}
-.appointment strong{color:#b7f34a}.appointment{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.proGroup{margin-top:16px;border:1px solid #40523a;border-radius:13px;overflow:hidden;background:#0d120d}.proHeader{padding:15px 17px;background:#1a2417;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.proHeader strong{color:#b7f34a;font-size:17px}.proBody{padding:0 14px 14px}.appointment strong{color:#b7f34a}.appointment{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:12px;padding:14px;border:1px solid #293629;border-radius:10px;background:#111611}.proStats{display:flex;gap:7px;flex-wrap:wrap}.proStats span{font-size:11px;padding:5px 8px;border-radius:20px;background:#0b100b;color:#dce8d4;border:1px solid #34452f}
 .pill{display:inline-block;margin:5px 5px 0 0;padding:5px 8px;border-radius:20px;background:#20291d;color:#cfe6b7;font-size:11px}
 .empty{padding:18px;color:#aab5a5;text-align:center;border:1px dashed #40523a;border-radius:10px}
 @media(max-width:560px){.appointment{grid-template-columns:1fr}}
@@ -89,9 +89,17 @@ function render(){
  el('upcomingCount').textContent=appointments.filter(a=>a.appointment_date>=now).length;
  const target=el('appointmentList');
  if(!filtered.length){target.innerHTML='<div class="empty">Nenhum agendamento encontrado para os filtros selecionados.</div>';return;}
- target.innerHTML=filtered.map(a=>{
-  const time=timeLabel(a.start_time)+(a.end_time?' – '+timeLabel(a.end_time):'');
-  return '<article class="appointment"><div><strong>'+esc(a.services?.name||'Serviço não informado')+'</strong><div class="muted">'+dateLabel(a.appointment_date)+' · '+esc(time)+'</div><div class="muted">Profissional: '+esc(a.professionals?.name||'Não informado')+'</div><div class="muted">Cliente: '+esc(a.customer_id||'Não identificado')+'</div></div><div><span class="pill">'+esc(a.status||'Sem situação')+'</span></div></article>';
+ const groups={};
+ filtered.forEach(a=>{const name=a.professionals?.name||'Profissional não informado';(groups[name]??=[]).push(a);});
+ target.innerHTML=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0],'pt-BR')).map(([name,items])=>{
+  const confirmed=items.filter(a=>String(a.status||'').toLowerCase().includes('confirm')).length;
+  const pending=items.filter(a=>String(a.status||'').toLowerCase().includes('pend')).length;
+  const rows=items.map(a=>{
+   const time=timeLabel(a.start_time)+(a.end_time?' – '+timeLabel(a.end_time):'');
+   const customer=customerProfiles[a.customer_id];
+   return '<article class="appointment"><div><strong>'+esc(a.services?.name||'Serviço não informado')+'</strong><div class="muted">'+dateLabel(a.appointment_date)+' · '+esc(time)+'</div><div class="muted">Cliente: '+esc(customer?.full_name||'Cliente não identificado')+(customer?.phone?' · '+esc(customer.phone):'')+'</div></div><div><span class="pill">'+esc(a.status||'Sem situação')+'</span></div></article>';
+  }).join('');
+  return '<section class="proGroup"><div class="proHeader"><strong>'+esc(name)+'</strong><div class="proStats"><span>'+items.length+' agendamento(s)</span><span>'+confirmed+' confirmado(s)</span><span>'+pending+' pendente(s)</span></div></div><div class="proBody">'+rows+'</div></section>';
  }).join('');
 }
 el('date').addEventListener('change',render);
