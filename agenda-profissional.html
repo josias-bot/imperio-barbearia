@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agenda profissional · Império Barbearia</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif}header{padding:18px;background:#111611;border-bottom:1px solid #293629;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1,h2{color:#b7f34a}h1{font-size:20px;margin:0}h2{font-size:18px;margin:0 0 14px}main{max-width:1000px;margin:auto;padding:18px 15px 50px}.panel,.item{margin-top:16px;padding:17px;border:1px solid #34452f;border-radius:13px;background:#111611}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}label{display:block;color:#cbd5c5;font-size:13px;margin:10px 0 6px}input,select{width:100%;padding:12px;border:1px solid #40523a;border-radius:9px;background:#090d09;color:#fff;font:inherit}button,.back{display:inline-block;padding:12px 14px;border:0;border-radius:9px;background:#b7f34a;color:#101510;text-decoration:none;font-weight:bold;cursor:pointer}.secondary{background:#20291d;color:#eaf2e5;border:1px solid #40523a}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.muted,#status{color:#aab5a5;font-size:13px;line-height:1.6}.item{padding:13px;margin-top:10px}.item strong{color:#b7f34a}.tag{display:inline-block;padding:4px 8px;margin:4px;border-radius:20px;background:#20291d;color:#d6e8c8;font-size:11px}.empty{padding:18px;text-align:center;color:#aab5a5;border:1px dashed #40523a;border-radius:10px}
+</style></head><body>
+<header><h1>Império Barbearia · <span id="heading">Minha agenda</span></h1><div class="actions"><a class="back" id="back" href="admin.html">Voltar</a><button class="secondary" id="logout">Sair</button></div></header>
+<main>
+<section class="panel"><h2 id="proName">Carregando agenda...</h2><div id="status">Verificando acesso...</div><div class="grid"><div><label for="filterDate">Data para consultar</label><input id="filterDate" type="date"></div><div><label for="filterType">Exibir</label><select id="filterType"><option value="all">Agendamentos e bloqueios</option><option value="appointments">Somente agendamentos</option><option value="blocks">Somente bloqueios</option></select></div></div><div class="actions"><button id="refresh">Atualizar</button><button class="secondary" id="allDates">Todas as datas</button></div></section>
+<section class="panel"><h2>Novo agendamento</h2><form id="booking"><div class="grid"><div><label for="customer">Cliente</label><select id="customer" required></select></div><div><label for="service">Serviço</label><select id="service" required></select></div><div><label for="bookDate">Data</label><input id="bookDate" type="date" required></div><div><label for="bookTime">Horário disponível</label><select id="bookTime" required><option value="">Selecione serviço e data</option></select></div></div><p id="bookMsg" class="muted"></p><button id="bookBtn">Criar agendamento</button></form></section>
+<section class="panel"><h2>Bloquear horário</h2><form id="block"><div class="grid"><div><label for="blockDate">Data</label><input id="blockDate" type="date" required></div><div><label for="blockStart">Início</label><input id="blockStart" type="time" required></div><div><label for="blockEnd">Término</label><input id="blockEnd" type="time" required></div><div><label for="reason">Motivo</label><input id="reason" maxlength="160" placeholder="Ex.: imprevisto"></div></div><p id="blockMsg" class="muted"></p><button id="blockBtn">Salvar bloqueio</button></form></section>
+<section class="panel"><h2>Horários</h2><div id="list"><div class="empty">Carregando...</div></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s'),$=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{let d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const minutes=t=>{let a=String(t).slice(0,5).split(':').map(Number);return a[0]*60+a[1]};
+const clock=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+let session,role,pro,appointments=[],blocks=[],customers=[],services=[];
+const folgas={Rodrigo:[0,1],Diogo:[3],Josias:[2]};
+const msg=(id,t)=>$(id).textContent=t;
+async function init(){
+ let s=await db.auth.getSession();session=s.data.session;if(!session){location.href='login.html';return}
+ let pr=await db.from('profiles').select('role').eq('id',session.user.id).single();if(pr.error){location.href='login.html';return}role=pr.data.role;
+ if(role==='admin'){
+  let id=new URLSearchParams(location.search).get('id');if(!id){msg('status','Abra uma agenda pela página Profissionais.');return}
+  let r=await db.from('professionals').select('id,name,active').eq('id',id).single();if(r.error){msg('status',r.error.message);return}pro=r.data;$('back').href='profissionais.html';$('back').textContent='← Equipe';
+ }else if(role==='professional'){
+  let r=await db.from('professionals').select('id,name,active').eq('profile_id',session.user.id).single();if(r.error){msg('status','Sua conta não está vinculada a um profissional.');return}pro=r.data;$('back').href='#';$('back').textContent='Minha agenda';
+ }else{location.href='login.html';return}
+ $('proName').textContent=pro.name;$('heading').textContent='Agenda · '+pro.name;
+ ['filterDate','bookDate','blockDate'].forEach(id=>$(id).value=today());
+ await options();await agenda();
+}
+async function options(){
+ let [c,s,p]=await Promise.all([
+  db.from('profiles').select('id,full_name,phone').eq('role','customer').order('full_name'),
+  db.from('services').select('id,name,duration_minutes,active,available_to_walkins').eq('active',true).eq('available_to_walkins',true).order('name'),
+  db.from('professional_services').select('service_id').eq('professional_id',pro.id)
+ ]);
+ if(c.error||s.error||p.error){msg('status','Erro ao carregar opções: '+(c.error||s.error||p.error).message);return}
+ customers=c.data||[];let allowed=new Set((p.data||[]).map(x=>x.service_id));services=(s.data||[]).filter(x=>allowed.has(x.id));
+ $('customer').innerHTML='<option value="">Selecione o cliente</option>'+customers.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.full_name||'Cliente')+(x.phone?' · '+esc(x.phone):'')+'</option>').join('');
+ $('service').innerHTML='<option value="">Selecione o serviço</option>'+services.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' · '+x.duration_minutes+' min</option>').join('');
+}
+async function agenda(){
+ msg('status','Carregando agenda...');
+ let a=db.from('appointments').select('id,customer_id,service_id,appointment_date,start_time,end_time,status').eq('professional_id',pro.id).order('appointment_date').order('start_time');
+ let b=db.from('professional_time_blocks').select('id,block_date,start_time,end_time,reason').eq('professional_id',pro.id).order('block_date').order('start_time');
+ let date=$('filterDate').value;if(date){a=a.eq('appointment_date',date);b=b.eq('block_date',date)}
+ let [ar,br]=await Promise.all([a,b]);if(ar.error||br.error){msg('status','Erro: '+(ar.error||br.error).message);return}
+ appointments=ar.data||[];blocks=br.data||[];
+ let ids=[...new Set(appointments.map(x=>x.customer_id))],sids=[...new Set(appointments.map(x=>x.service_id))];
+ let [cr,sr]=await Promise.all([ids.length?db.from('profiles').select('id,full_name,phone').in('id',ids):Promise.resolve({data:[]}),sids.length?db.from('services').select('id,name').in('id',sids):Promise.resolve({data:[]})]);
+ let cm=Object.fromEntries((cr.data||[]).map(x=>[x.id,x])),sm=Object.fromEntries((sr.data||[]).map(x=>[x.id,x]));
+ let mode=$('filterType').value,items=[];
+ if(mode!=='blocks')appointments.forEach(x=>items.push({date:x.appointment_date,start:x.start_time,end:x.end_time,html:'<strong>'+esc(cm[x.customer_id]?.full_name||'Cliente')+'</strong><div class="muted">'+esc(sm[x.service_id]?.name||'Serviço')+' · '+esc(cm[x.customer_id]?.phone||'')+'</div><span class="tag">'+esc(x.status)+'</span>'}));
+ if(mode!=='appointments')blocks.forEach(x=>items.push({date:x.block_date,start:x.start_time,end:x.end_time,html:'<strong>Bloqueio</strong><div class="muted">'+esc(x.reason||'Sem motivo informado')+'</div>'}));
+ items.sort((x,y)=>(x.date+x.start).localeCompare(y.date+y.start));
+ $('list').innerHTML=items.length?items.map(x=>'<article class="item"><strong>'+x.date.split('-').reverse().join('/')+' · '+String(x.start).slice(0,5)+'–'+String(x.end).slice(0,5)+'</strong>'+x.html+'</article>').join(''):'<div class="empty">Nenhum horário encontrado.</div>';
+ msg('status',appointments.length+' agendamento(s) e '+blocks.length+' bloqueio(s).');
+}
+async function times(){
+ let svc=services.find(x=>x.id===$('service').value),date=$('bookDate').value;
+ $('bookTime').innerHTML='<option value="">Consultando horários...</option>';if(!svc||!date){$('bookTime').innerHTML='<option value="">Selecione serviço e data</option>';return}
+ let wd=new Date(date+'T12:00:00').getDay();if((folgas[pro.name]||[]).includes(wd)){$('bookTime').innerHTML='<option value="">Profissional de folga</option>';return}
+ let [a,b]=await Promise.all([db.from('appointments').select('start_time,end_time,status').eq('professional_id',pro.id).eq('appointment_date',date),db.from('professional_time_blocks').select('start_time,end_time').eq('professional_id',pro.id).eq('block_date',date)]);
+ if(a.error||b.error){$('bookTime').innerHTML='<option value="">Erro ao consultar agenda</option>';msg('bookMsg',(a.error||b.error).message);return}
+ let start=wd===0?480:wd===6?480:540,end=wd===0?720:1140,dur=Number(svc.duration_minutes)||30,used=[...(a.data||[]).filter(x=>!['cancelled','canceled','cancelado'].includes(String(x.status).toLowerCase())),...(b.data||[])],free=[];
+ for(let t=start;t+dur<=end;t+=30)if(!used.some(x=>t<minutes(x.end_time)&&t+dur>minutes(x.start_time)))free.push(t);
+ $('bookTime').innerHTML='<option value="">Selecione o horário</option>'+free.map(t=>'<option value="'+clock(t)+'">'+clock(t)+'</option>').join('');if(!free.length)$('bookTime').innerHTML='<option value="">Sem horários livres</option>';
+}
+$('service').addEventListener('change',times);$('bookDate').addEventListener('change',times);
+$('booking').addEventListener('submit',async e=>{
+ e.preventDefault();$('bookBtn').disabled=true;msg('bookMsg','Salvando agendamento...');
+ let svc=services.find(x=>x.id===$('service').value),start=$('bookTime').value;if(!svc||!start){msg('bookMsg','Escolha serviço e horário.');$('bookBtn').disabled=false;return}
+ let end=clock(minutes(start)+Number(svc.duration_minutes));
+ let r=await db.from('appointments').insert({customer_id:$('customer').value,professional_id:pro.id,service_id:svc.id,appointment_date:$('bookDate').value,start_time:start,end_time:end,status:'scheduled'});
+ msg('bookMsg',r.error?'Não foi possível agendar: '+r.error.message:'Agendamento criado com sucesso.');if(!r.error){await agenda();await times()}$('bookBtn').disabled=false;
+});
+$('block').addEventListener('submit',async e=>{
+ e.preventDefault();$('blockBtn').disabled=true;let start=$('blockStart').value,end=$('blockEnd').value;
+ if(end<=start){msg('blockMsg','O término deve ser posterior ao início.');$('blockBtn').disabled=false;return}
+ let r=await db.from('professional_time_blocks').insert({professional_id:pro.id,block_date:$('blockDate').value,start_time:start,end_time:end,reason:$('reason').value.trim()||null,created_by:session.user.id});
+ msg('blockMsg',r.error?'Não foi possível bloquear: '+r.error.message:'Horário bloqueado com sucesso.');if(!r.error){$('block').reset();$('blockDate').value=today();await agenda();await times()}$('blockBtn').disabled=false;
+});
+$('filterDate').addEventListener('change',agenda);$('filterType').addEventListener('change',agenda);$('refresh').addEventListener('click',agenda);$('allDates').addEventListener('click',()=>{$('filterDate').value='';agenda()});$('logout').addEventListener('click',async()=>{await db.auth.signOut();location.href='login.html'});init();
+</script></body></html>
