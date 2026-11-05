@@ -27,9 +27,10 @@ const el=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<
 const {data:{session}}=await sb.auth.getSession();
 if(!session){location.replace('login.html');throw new Error('Sessão não encontrada');}
 const user=session.user;
-const {data:profile,error:profileError}=await sb.from('profiles').select('full_name,phone').eq('id',user.id).maybeSingle();
+const {data:profile,error:profileError}=await sb.from('profiles').select('id,full_name,phone').or('id.eq.'+user.id+',auth_user_id.eq.'+user.id).maybeSingle();
+const customerProfileId=profile?.id||user.id;
 if(profileError){el('status').textContent='Não foi possível carregar seu perfil: '+profileError.message;}else{const name=profile?.full_name||user.user_metadata?.full_name||'Cliente';el('firstName').textContent=name.trim().split(/\s+/)[0];el('fullName').textContent=name;el('phone').textContent=profile?.phone||user.phone||'Não informado';el('status').textContent='Você está conectado com sucesso.';}
-const {data:subs, error:subsError}=await sb.from('subscriptions').select('status,started_at,expires_at,plans(name)').eq('customer_id',user.id).order('created_at',{ascending:false});
+const {data:subs, error:subsError}=await sb.from('subscriptions').select('status,started_at,expires_at,plans(name)').eq('customer_id',customerProfileId).order('created_at',{ascending:false});
 el('subscriptions').innerHTML=subsError?'<p class="empty">Não foi possível carregar suas assinaturas.</p>':(subs?.length?subs.map(s=>`<div class="item"><strong>${esc(s.plans?.name||'Plano')}</strong><div class="muted">Status: ${esc(s.status)}${s.expires_at?' • Validade: '+new Date(s.expires_at).toLocaleDateString('pt-BR'):''}</div></div>`).join(''):'<p class="empty">Você ainda não possui assinatura.</p>');
 const {data:apps,error:appsError}=await sb.from('appointments').select('appointment_date,start_time,end_time,status,services(name),professionals(name)').eq('customer_id',user.id).order('appointment_date',{ascending:false}).limit(20);
 el('appointments').innerHTML=appsError?'<p class="empty">Não foi possível carregar seus agendamentos.</p>':(apps?.length?apps.map(a=>`<div class="item"><strong>${esc(a.services?.name||'Serviço')}</strong><div class="muted">${new Date(a.appointment_date+'T12:00:00').toLocaleDateString('pt-BR')} • ${esc(String(a.start_time).slice(0,5))} • ${esc(a.professionals?.name||'Profissional')}</div><div class="muted">Status: ${esc(a.status)}</div></div>`).join(''):'<p class="empty">Você ainda não possui agendamentos.</p>');
