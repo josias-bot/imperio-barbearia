@@ -5,7 +5,11 @@ main{padding-bottom:100px!important}.intro{display:flex;justify-content:space-be
 </style></head><body>
 <header><div class="app-header-main"><div class="app-brand"><div class="app-brand-mark">I</div><div><h1>Império Barbearia</h1><small>Comissões da equipe · 50% e 100%</small></div></div><a class="back" href="admin.html">Painel</a></div></header>
 <main>
-<div class="intro"><div><h2>Comissões</h2><p>Rodrigo recebe 100%; Josias e Diogo recebem 50% por serviço concluído.</p></div><button id="refresh" class="secondary">Atualizar</button></div>
+<div class="intro"><div><h2>Financeiro</h2><p>Faturamento bruto dos serviços finalizados, com comissões separadas.</p></div><button id="refresh" class="secondary">Atualizar</button></div>
+<div class="sectionHead"><h2>Faturamento</h2><small id="revenuePeriod"></small></div>
+<div class="stats"><div class="stat"><span>Faturamento bruto</span><strong id="grossTotal">—</strong><small id="grossCount">Serviços finalizados</small></div><div class="stat"><span>Comissões</span><strong id="commissionExpense">—</strong><small>Valor destinado à equipe</small></div><div class="stat"><span>Após comissões</span><strong id="netTotal">—</strong><small>Bruto menos comissões</small></div></div>
+<div class="notice">O faturamento bruto considera o valor integral de cada serviço finalizado. As comissões são exibidas separadamente e não são subtraídas do bruto.</div>
+<div class="sectionHead"><h2>Comissões da equipe</h2><small>Rodrigo 100% · Josias e Diogo 50%</small></div>
 <div class="filters">
  <div><label for="professional">Profissional</label><select id="professional"><option value="">Todos os profissionais</option></select></div>
  <div><label for="from">Data inicial</label><input id="from" type="date"></div>
@@ -26,7 +30,7 @@ main{padding-bottom:100px!important}.intro{display:flex;justify-content:space-be
 <script>
 const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');
 const $=id=>document.getElementById(id),money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let rows=[],view='pending';
+let rows=[],appointments=[],view='pending';
 function say(v){$('status').textContent=v}
 function dateValue(d){return d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'—'}
 async function init(){
@@ -38,12 +42,13 @@ async function init(){
 }
 async function load(){
  say('Carregando comissões...');
- const [r,p]=await Promise.all([
+ const [r,p,a]=await Promise.all([
   db.from('professional_commissions').select('id,appointment_id,professional_id,service_id,service_price,commission_rate,commission_amount,status,paid_at,created_at,professionals(name),services(name),appointments(appointment_date,start_time)').order('created_at',{ascending:false}).limit(1000),
-  db.from('professionals').select('id,name').order('name')
+  db.from('professionals').select('id,name').order('name'),
+  db.from('appointments').select('id,professional_id,appointment_date,start_time,status,services(name,price),professionals(name)').eq('status','completed').order('appointment_date',{ascending:false}).limit(2000)
  ]);
  if(r.error){say('Não foi possível carregar comissões: '+r.error.message+'. Confira se o SQL de comissões foi executado no Supabase.');$('commissionList').innerHTML='';return}
- rows=r.data||[];
+ rows=r.data||[];appointments=a.data||[];
  $('professional').innerHTML='<option value="">Todos os profissionais</option>'+(p.data||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');
  say(rows.length+' comissão(ões) registradas.');
  render();
@@ -53,7 +58,14 @@ function filtered(){
  return rows.filter(x=>{const d=x.appointments?.appointment_date||x.created_at?.slice(0,10);return(!prof||x.professional_id===prof)&&(!from||d>=from)&&(!to||d<=to)});
 }
 function render(){
- const data=filtered(),unpaid=data.filter(x=>x.status==='pending'),paid=data.filter(x=>x.status==='paid');
+ const data=filtered(),prof=$('professional').value,from=$('from').value,to=$('to').value;
+ const done=appointments.filter(x=>(!prof||x.professional_id===prof)&&(!from||x.appointment_date>=from)&&(!to||x.appointment_date<=to));
+ const commissionByAppointment=new Map(rows.map(x=>[x.appointment_id,x]));
+ const gross=done.reduce((n,x)=>n+Number(commissionByAppointment.get(x.id)?.service_price??x.services?.price??0),0);
+ const commissionTotal=done.reduce((n,x)=>n+Number(commissionByAppointment.get(x.id)?.commission_amount??0),0);
+ $('grossTotal').textContent=money(gross);$('commissionExpense').textContent=money(commissionTotal);$('netTotal').textContent=money(gross-commissionTotal);
+ $('grossCount').textContent=done.length+' serviço(s) finalizado(s)';$('revenuePeriod').textContent=(from?dateValue(from):'Início')+' até '+(to?dateValue(to):'Hoje');
+ const unpaid=data.filter(x=>x.status==='pending'),paid=data.filter(x=>x.status==='paid');
  const sum=list=>list.reduce((n,x)=>n+Number(x.commission_amount||0),0);
  $('unpaidTotal').textContent=money(sum(unpaid));$('unpaidCount').textContent=unpaid.length+' serviço(s)';
  $('paidTotal').textContent=money(sum(paid));$('paidCount').textContent=paid.length+' serviço(s)';
