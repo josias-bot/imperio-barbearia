@@ -34,7 +34,11 @@ el('signupBtn').onclick=async()=>{
  const {data,error}=await sb.auth.signUp({phone,password,options:{data:{full_name:fullName,first_name:first,last_name:last,phone}}});
  btn.disabled=false;
  if(error){msg.textContent=error.message;msg.style.color='#ff9b9b';}
- else if(data.session){msg.textContent='Cadastro realizado! Sua conta já está criada. Você já pode entrar.';msg.style.color='var(--lime)';}
+ else if(data.session){
+  const linked=await sb.rpc('claim_walkin_customer',{p_phone:phone,p_full_name:fullName});
+  if(linked.error){msg.textContent='Conta criada, mas não foi possível vincular o cadastro anterior: '+linked.error.message;msg.style.color='#ffcf70';}
+  else{msg.textContent='Cadastro realizado! Seu histórico foi vinculado. Você já pode entrar.';msg.style.color='var(--lime)';}
+ }
  else{msg.textContent='Cadastro enviado, mas o Supabase ainda está exigindo confirmação. Confira a configuração “Confirm phone” no painel Supabase.';msg.style.color='#ffcf70';}
 };
 </script></body></html>
