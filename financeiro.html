@@ -1,1 +1,70 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Financeiro — Império Barbearia</title><style>*{box-sizing:border-box}body{margin:0;background:#080a08;color:#f4f7f2;font-family:Arial,sans-serif}header{padding:20px;background:#111611;border-bottom:1px solid #293629;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1,h2{color:#b7f34a}h1{font-size:22px;margin:0}main{max-width:900px;margin:auto;padding:22px}.back{display:inline-block;padding:12px 15px;border-radius:10px;background:#b7f34a;color:#101510;text-decoration:none;font-weight:bold}.panel{margin-top:22px;padding:20px;border:1px solid #34452f;border-radius:14px;background:#111611;color:#b8c2b3;line-height:1.6}</style><link rel="stylesheet" href="painel.css"></head><body><header><h1>Império Barbearia · Financeiro</h1><a class="back" href="admin.html">← Voltar ao painel</a><nav class="app-nav" aria-label="Navegação principal"><a href="admin.html">Visão geral</a><a href="agendamentos.html">Agenda</a><a href="clientes.html">Clientes</a><a href="profissionais.html">Profissionais</a><a href="servicos.html">Serviços</a><a href="planos.html">Planos</a><a href="produtos.html">Produtos</a><a href="financeiro.html">Financeiro</a></nav></header><main><h2>Financeiro</h2><div class="panel">Acompanhamento de pagamentos e relatórios financeiros.<br><br>Esta página individual está criada. As ferramentas de gerenciamento desta seção serão implementadas na próxima etapa.</div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');(async()=>{const {data:{session}}=await db.auth.getSession();if(!session){location.href='login.html';return;}const {data,error}=await db.from('profiles').select('role').eq('id',session.user.id).single();if(error||data.role!=='admin')location.href='login.html';})();</script><script id="app-nav-active">document.querySelectorAll('.app-nav a').forEach(a=>{const target=new URL(a.href,location.href).pathname.split('/').pop();if(target===location.pathname.split('/').pop())a.setAttribute('aria-current','page')});</script></body></html>
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0e0c"><title>Comissões — Império Barbearia</title><link rel="stylesheet" href="painel.css">
+<style>
+main{padding-bottom:100px!important}.intro{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.intro p{color:var(--app-muted);margin:6px 0 0;font-size:13px}.filters{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;margin:18px 0}.filters label{display:block;font-size:12px;margin-bottom:6px}.filters select,.filters input{width:100%;padding:12px}.tabs{display:flex;gap:6px;background:#182019;border:1px solid var(--app-line);padding:5px;border-radius:14px;margin:14px 0}.tabs button{flex:1;background:transparent!important;color:var(--app-muted)!important;border:0!important}.tabs button.active{background:#b7f34a!important;color:#11170c!important}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}.stat{padding:16px;border-radius:16px}.stat span{display:block;color:var(--app-muted);font-size:12px}.stat strong{display:block;font-size:clamp(19px,3vw,27px);margin-top:8px;color:var(--app-text)}.stat small{color:var(--app-muted)}.sectionHead{display:flex;justify-content:space-between;align-items:center;margin:22px 0 12px}.commissionList{display:grid;gap:10px}.commission{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:15px;border:1px solid var(--app-line);background:var(--app-surface);border-radius:14px}.commission strong{display:block}.commission .meta{font-size:12px;color:var(--app-muted);margin-top:5px;line-height:1.5}.amount{text-align:right;white-space:nowrap}.amount b{font-size:18px}.state{display:inline-block;margin-top:6px;padding:4px 8px;border-radius:20px;background:#263326;color:#d9efc9;font-size:11px}.paid{background:#173b2b;color:#a8f0c5}.commission button{display:block;margin:8px 0 0 auto;padding:8px 10px;font-size:12px}.empty{padding:24px;text-align:center;color:var(--app-muted);border:1px dashed var(--app-line);border-radius:14px}.notice{font-size:12px;color:var(--app-muted);line-height:1.5;margin-top:14px}.bottomNav{position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;justify-content:space-around;gap:4px;padding:9px 8px calc(9px + env(safe-area-inset-bottom));background:#0d130ef2;border-top:1px solid var(--app-line);backdrop-filter:blur(14px)}.bottomNav a{color:var(--app-muted);text-decoration:none;text-align:center;font-size:11px;min-width:54px}.bottomNav a span{display:block;font-size:20px;margin-bottom:3px}.bottomNav a.active{color:var(--app-accent)}#status{font-size:13px;color:var(--app-muted);margin:10px 0}@media(max-width:680px){.filters{grid-template-columns:1fr 1fr}.filters>div:first-child{grid-column:1/-1}.stats{grid-template-columns:1fr 1fr}.stats .stat:last-child{grid-column:1/-1}.commission{align-items:flex-start}.amount b{font-size:16px}}@media(max-width:390px){.stats{grid-template-columns:1fr}.stats .stat:last-child{grid-column:auto}}
+</style></head><body>
+<header><div class="app-header-main"><div class="app-brand"><div class="app-brand-mark">I</div><div><h1>Império Barbearia</h1><small>Comissões da equipe · 50%</small></div></div><a class="back" href="admin.html">Painel</a></div></header>
+<main>
+<div class="intro"><div><h2>Comissões</h2><p>Repasse de 50% por serviço concluído.</p></div><button id="refresh" class="secondary">Atualizar</button></div>
+<div class="filters">
+ <div><label for="professional">Profissional</label><select id="professional"><option value="">Todos os profissionais</option></select></div>
+ <div><label for="from">Data inicial</label><input id="from" type="date"></div>
+ <div><label for="to">Data final</label><input id="to" type="date"></div>
+</div>
+<div class="tabs"><button id="unpaidTab" class="active" type="button">Não pagas</button><button id="paidTab" type="button">Pagas</button></div>
+<div class="stats">
+ <div class="stat"><span>Comissões não pagas</span><strong id="unpaidTotal">—</strong><small id="unpaidCount">—</small></div>
+ <div class="stat"><span>Comissões pagas</span><strong id="paidTotal">—</strong><small id="paidCount">—</small></div>
+ <div class="stat"><span>Total de comissões</span><strong id="allTotal">—</strong><small>50% dos serviços concluídos</small></div>
+</div>
+<div class="sectionHead"><h2 id="listTitle">Comissões não pagas</h2></div>
+<div id="status">Verificando acesso...</div><div id="commissionList" class="commissionList"></div>
+<p class="notice">A comissão é gerada automaticamente quando um agendamento passa para “Finalizado”. O valor é calculado com base no preço do serviço no momento da conclusão.</p>
+</main>
+<nav class="bottomNav" aria-label="Atalhos"><a href="agendamentos.html"><span>▦</span>Agenda</a><a href="financeiro.html" class="active"><span>％</span>Comissões</a><a href="clientes.html"><span>♙</span>Clientes</a><a href="admin.html"><span>⌂</span>Menu</a></nav>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const db=window.supabase.createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');
+const $=id=>document.getElementById(id),money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let rows=[],view='pending';
+function say(v){$('status').textContent=v}
+function dateValue(d){return d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'—'}
+async function init(){
+ const {data:{session}}=await db.auth.getSession();if(!session){location.href='login.html';return}
+ const {data:profile,error}=await db.from('profiles').select('role').eq('id',session.user.id).single();if(error||profile?.role!=='admin'){location.href='login.html';return}
+ const now=new Date(),first=new Date(now.getFullYear(),now.getMonth(),1);
+ $('from').value=first.toISOString().slice(0,10);$('to').value=now.toISOString().slice(0,10);
+ await load();
+}
+async function load(){
+ say('Carregando comissões...');
+ const [r,p]=await Promise.all([
+  db.from('professional_commissions').select('id,appointment_id,professional_id,service_id,service_price,commission_rate,commission_amount,status,paid_at,created_at,professionals(name),services(name),appointments(appointment_date,start_time)').order('created_at',{ascending:false}).limit(1000),
+  db.from('professionals').select('id,name').order('name')
+ ]);
+ if(r.error){say('Não foi possível carregar comissões: '+r.error.message+'. Confira se o SQL de comissões foi executado no Supabase.');$('commissionList').innerHTML='';return}
+ rows=r.data||[];
+ $('professional').innerHTML='<option value="">Todos os profissionais</option>'+(p.data||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');
+ say(rows.length+' comissão(ões) registradas.');
+ render();
+}
+function filtered(){
+ const prof=$('professional').value,from=$('from').value,to=$('to').value;
+ return rows.filter(x=>{const d=x.appointments?.appointment_date||x.created_at?.slice(0,10);return(!prof||x.professional_id===prof)&&(!from||d>=from)&&(!to||d<=to)});
+}
+function render(){
+ const data=filtered(),unpaid=data.filter(x=>x.status==='pending'),paid=data.filter(x=>x.status==='paid');
+ const sum=list=>list.reduce((n,x)=>n+Number(x.commission_amount||0),0);
+ $('unpaidTotal').textContent=money(sum(unpaid));$('unpaidCount').textContent=unpaid.length+' serviço(s)';
+ $('paidTotal').textContent=money(sum(paid));$('paidCount').textContent=paid.length+' serviço(s)';
+ $('allTotal').textContent=money(sum(data));
+ const list=data.filter(x=>x.status===view);$('listTitle').textContent=view==='pending'?'Comissões não pagas':'Comissões pagas';
+ $('commissionList').innerHTML=list.length?list.map(x=>'<article class="commission"><div><strong>'+esc(x.professionals?.name||'Profissional')+' · '+esc(x.services?.name||'Serviço')+'</strong><div class="meta">'+dateValue(x.appointments?.appointment_date)+' · '+esc(String(x.appointments?.start_time||'').slice(0,5))+'<br>Serviço: '+money(x.service_price)+' · Comissão: 50%</div><span class="state '+(x.status==='paid'?'paid':'')+'">'+(x.status==='paid'?'Paga':'Não paga')+'</span></div><div class="amount"><b>'+money(x.commission_amount)+'</b>'+(x.status==='pending'?'<button type="button" data-paid="'+esc(x.id)+'">Marcar como paga</button>':'<div class="meta">Paga em '+dateValue(x.paid_at?.slice(0,10))+'</div>')+'</div></article>').join(''):'<div class="empty">Nenhuma comissão '+(view==='pending'?'não paga':'paga')+' neste período.</div>';
+ $('commissionList').querySelectorAll('[data-paid]').forEach(b=>b.addEventListener('click',()=>markPaid(b.dataset.paid)));
+}
+async function markPaid(id){if(!confirm('Confirma que esta comissão foi paga?'))return;const {error}=await db.from('professional_commissions').update({status:'paid',paid_at:new Date().toISOString()}).eq('id',id);if(error){say('Não foi possível marcar como paga: '+error.message);return}say('Comissão marcada como paga.');await load()}
+['professional','from','to'].forEach(id=>$(id).addEventListener('change',render));
+$('unpaidTab').onclick=()=>{view='pending';$('unpaidTab').classList.add('active');$('paidTab').classList.remove('active');render()};
+$('paidTab').onclick=()=>{view='paid';$('paidTab').classList.add('active');$('unpaidTab').classList.remove('active');render()};
+$('refresh').onclick=load;init();
+</script></body></html>
