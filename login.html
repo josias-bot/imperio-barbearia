@@ -42,7 +42,7 @@ document.getElementById('login').addEventListener('submit',async e=>{
  }
  const {data,error}=await db.auth.signInWithPassword(credentials);
  if(error){msg.textContent='Não foi possível entrar: '+error.message;return;}
- const {data:profile,error:profileError}=await db.from('profiles').select('role').eq('id',data.user.id).single();
+ const {data:profile,error:profileError}=await db.from('profiles').select('role').or('id.eq.'+data.user.id+',auth_user_id.eq.'+data.user.id).maybeSingle();
  if(profileError){msg.textContent='Login realizado, mas não foi possível verificar seu perfil: '+profileError.message;return;}
  if(profile.role==='admin') location.href='admin.html';
  else if(profile.role==='professional') location.href='agenda-profissional.html';
