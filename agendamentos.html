@@ -19,7 +19,7 @@ input,select{width:100%;padding:12px;border:1px solid #40523a;border-radius:9px;
 .stat{padding:14px;border-radius:10px;background:#0b100b;border:1px solid #293629}.stat strong{display:block;color:#b7f34a;font-size:22px}.muted{color:#aab5a5;font-size:13px;line-height:1.6}
 .proGroup{margin-top:16px;border:1px solid #40523a;border-radius:13px;overflow:hidden;background:#0d120d}.proHeader{padding:15px 17px;background:#1a2417;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.proHeader strong{color:#b7f34a;font-size:17px}.proBody{padding:0 14px 14px}.appointment strong{color:#b7f34a}.appointment{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:12px;padding:14px;border:1px solid #293629;border-radius:10px;background:#111611}.proStats{display:flex;gap:7px;flex-wrap:wrap}.proStats span{font-size:11px;padding:5px 8px;border-radius:20px;background:#0b100b;color:#dce8d4;border:1px solid #34452f}
 .pill{display:inline-block;margin:5px 5px 0 0;padding:5px 8px;border-radius:20px;background:#20291d;color:#cfe6b7;font-size:11px}
-.empty{padding:18px;color:#aab5a5;text-align:center;border:1px dashed #40523a;border-radius:10px}
+.hidden{display:none!important}.empty{padding:18px;color:#aab5a5;text-align:center;border:1px dashed #40523a;border-radius:10px}
 @media(max-width:560px){.appointment{grid-template-columns:1fr}}
 </style><link rel="stylesheet" href="painel.css"></head>
 <body>
@@ -29,7 +29,7 @@ input,select{width:100%;padding:12px;border:1px solid #40523a;border-radius:9px;
 <h2>Novo agendamento manual</h2>
 <form id="bookingForm">
 <div class="filters">
-<div><label for="newCustomer">Cliente</label><select id="newCustomer" required><option value="">Carregando clientes...</option></select></div>
+<div><label for="newCustomer">Cliente</label><select id="newCustomer" required><option value="">Carregando clientes...</option></select></div><div id="walkinFields" class="hidden"><label for="walkinName">Nome completo do cliente avulso</label><input id="walkinName" autocomplete="name" placeholder="Nome completo"><label for="walkinPhone">Telefone com DDD (obrigatório)</label><input id="walkinPhone" type="tel" inputmode="tel" placeholder="(81) 99999-9999"></div>
 <div><label for="newService">Serviço</label><select id="newService" required><option value="">Carregando serviços...</option></select></div>
 <div><label for="newProfessional">Profissional</label><select id="newProfessional" required><option value="">Escolha o serviço primeiro</option></select></div>
 <div><label for="newDate">Data</label><input id="newDate" type="date" required></div>
@@ -83,7 +83,7 @@ async function loadBookingOptions(){
  ]);
  for(const x of [cu,se,pr,li])if(x.error)throw x.error;
  bookingCustomers=cu.data||[];bookingServices=se.data||[];bookingProfessionals=pr.data||[];bookingLinks=li.data||[];
- el('newCustomer').innerHTML='<option value="">Selecione o cliente</option>'+bookingCustomers.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.full_name||'Cliente')+(x.phone?' · '+esc(x.phone):'')+'</option>').join('');
+ el('newCustomer').innerHTML='<option value="">Selecione o cliente</option><option value="__new__">＋ Cadastrar cliente avulso</option>'+bookingCustomers.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.full_name||'Cliente')+(x.phone?' · '+esc(x.phone):'')+'</option>').join('');
  el('newService').innerHTML='<option value="">Selecione o serviço</option>'+bookingServices.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' · '+esc(x.duration_minutes)+' min</option>').join('');
  el('newProfessional').innerHTML='<option value="">Selecione o profissional</option>';
 }
@@ -190,13 +190,21 @@ function render(){
   return '<section class="proGroup"><div class="proHeader"><strong>'+esc(name)+'</strong><div class="proStats"><span>'+items.length+' agendamento(s)</span><span>'+confirmed+' confirmado(s)</span><span>'+pending+' pendente(s)</span></div></div><div class="proBody">'+rows+'</div></section>';
  }).join('');
 }
+el('newCustomer').addEventListener('change',()=>{const fresh=el('newCustomer').value==='__new__';el('walkinFields').classList.toggle('hidden',!fresh);el('walkinName').required=fresh;el('walkinPhone').required=fresh;});
 el('newService').addEventListener('change',updateBookingProfessionals);
 el('newProfessional').addEventListener('change',updateBookingTimes);
 el('newDate').addEventListener('change',updateBookingTimes);
 el('bookingForm').addEventListener('submit',async event=>{
  event.preventDefault();
- const customer=el('newCustomer').value,service=bookingServices.find(x=>x.id===el('newService').value),professional=bookingProfessionals.find(x=>x.id===el('newProfessional').value),date=el('newDate').value,time=el('newTime').value;
+ let customer=el('newCustomer').value;const service=bookingServices.find(x=>x.id===el('newService').value),professional=bookingProfessionals.find(x=>x.id===el('newProfessional').value),date=el('newDate').value,time=el('newTime').value;
  if(!customer||!service||!professional||!date||!time){setBookingStatus('Preencha todos os campos.');return;}
+ if(customer==='__new__'){
+  const name=el('walkinName').value.trim(),phone=el('walkinPhone').value.trim();
+  if(!name||!phone){setBookingStatus('Informe nome completo e telefone do cliente avulso.');return;}
+  const created=await db.rpc('create_walkin_customer',{p_full_name:name,p_phone:phone});
+  if(created.error){setBookingStatus('Não foi possível cadastrar o cliente: '+created.error.message);return;}
+  customer=created.data;
+ }
  if(date<today()){setBookingStatus('Não é possível criar agendamento em uma data passada.');return;}
  const day=new Date(date+'T12:00:00').getDay(),off=(dayOff[professional.name]||[]).includes(day);
  if(off){setBookingStatus('Este profissional está de folga nesta data.');return;}
@@ -216,7 +224,7 @@ el('bookingForm').addEventListener('submit',async event=>{
  el('createBooking').disabled=false;el('createBooking').textContent='Criar agendamento';
  if(error){setBookingStatus('Não foi possível criar o agendamento: '+error.message);return;}
  setBookingStatus('Agendamento criado com sucesso!');
- el('bookingForm').reset();el('newProfessional').innerHTML='<option value="">Selecione o profissional</option>';el('newTime').innerHTML='<option value="">Escolha serviço, profissional e data</option>';
+ el('bookingForm').reset();el('walkinFields').classList.add('hidden');el('walkinName').required=false;el('walkinPhone').required=false;el('newProfessional').innerHTML='<option value="">Selecione o profissional</option>';el('newTime').innerHTML='<option value="">Escolha serviço, profissional e data</option>';
  await loadAppointments();
 });
 el('appointmentList').addEventListener('click',event=>{const button=event.target.closest('[data-status-id]');if(button)changeAppointmentStatus(button.dataset.statusId,button.dataset.nextStatus);});
