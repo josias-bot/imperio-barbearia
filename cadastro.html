@@ -22,7 +22,7 @@ button,.button{display:block;text-align:center;text-decoration:none;border:0;bor
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const sb=createClient('https://xvvedeikerapozbajaii.supabase.co','sb_publishable_Nd8pXcRHo35OqTCzWZQvAg_mMehIU-s');
 const el=id=>document.getElementById(id);
-function phoneE164(value){const digits=value.replace(/\\D/g,'');if(digits.startsWith('55')&&(digits.length===12||digits.length===13))return '+'+digits;if(digits.length===10||digits.length===11)return '+55'+digits;return '';}
+function phoneE164(value){const digits=value.replace(/\D/g,'');if(digits.startsWith('55')&&(digits.length===12||digits.length===13))return '+'+digits;if(digits.length===10||digits.length===11)return '+55'+digits;return '';}
 el('signupBtn').onclick=async()=>{
  const first=el('firstName').value.trim(),last=el('lastName').value.trim(),phone=phoneE164(el('phone').value),password=el('password').value;
  const msg=el('msg');msg.classList.remove('hidden');
